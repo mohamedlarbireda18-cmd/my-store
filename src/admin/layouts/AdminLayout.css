@@ -1,0 +1,22 @@
+.admin-main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 28px 32px;
+}
+
+@media (min-width: 1024px) {
+  .admin-main {
+    margin-left: var(--admin-sidebar-width);
+  }
+}
+
+@media (max-width: 1023px) {
+  .admin-content {
+    padding: 20px 16px;
+  }
+}
