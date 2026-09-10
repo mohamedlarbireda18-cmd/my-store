@@ -280,3 +280,19 @@ serve(async (req: Request) => {
     )
   }
 })
+export interface Category {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CategoryInput {
+  name: string
+  slug: string
+  description?: string | null
+  is_active?: boolean
+}

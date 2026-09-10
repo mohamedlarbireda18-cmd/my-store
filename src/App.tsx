@@ -5,6 +5,7 @@ import { AdminAuthProvider } from './features/auth/AdminAuthContext'
 import { ProtectedRoute } from './features/auth/ProtectedRoute'
 import { AdminLayout } from './layouts/AdminLayout'
 import { AdminLogin } from './pages/admin/AdminLogin'
+import { Categories } from './pages/admin/Categories'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,9 +23,9 @@ function App() {
         <AdminAuthProvider>
           <div className="min-h-screen bg-gray-50">
             <Routes>
-              {/* Admin Routes */}
+              {/* Admin Login */}
               <Route path="/admin/login" element={<AdminLogin />} />
-              
+
               {/* Protected Admin Routes */}
               <Route
                 path="/admin"
@@ -61,7 +62,7 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AdminLayout>
-                      <div>Categories (coming soon)</div>
+                      <Categories />
                     </AdminLayout>
                   </ProtectedRoute>
                 }
@@ -87,14 +88,12 @@ function App() {
                 }
               />
 
-              {/* Redirect all other /admin/* to admin login or dashboard */}
+              {/* Catch-all redirects */}
               <Route path="/admin/*" element={<Navigate to="/admin" replace />} />
-
-              {/* Customer Routes (coming soon) */}
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
 
-            <Toaster 
+            <Toaster
               position="top-center"
               toastOptions={{
                 duration: 3000,
