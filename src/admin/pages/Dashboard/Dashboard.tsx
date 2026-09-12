@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ResponsiveContainer,
@@ -31,6 +32,7 @@ import {
   useOrdersByCategory,
   useRecentOrders,
   useRecentActivity,
+  type SalesRange,
 } from '../../../hooks/useDashboard'
 import {
   formatPrice,
@@ -41,28 +43,38 @@ import {
 import { timeAgo } from '../../../utils/timeAgo'
 import './Dashboard.css'
 
-// Warm palette for donut slices
+// Distinct donut palette — no two colors are close
 const DONUT_COLORS = [
-  '#6366f1', // indigo
-  '#8b5cf6', // purple
+  '#00b274', // green
+  '#facc15', // yellow
+  '#a855f7', // mauve / purple
+  '#f97316', // orange
   '#ec4899', // pink
-  '#f59e0b', // orange
-  '#10b981', // green
   '#3b82f6', // blue
   '#14b8a6', // teal
-  '#f43f5e', // red
+  '#8b5cf6', // violet
+]
+
+const CHART_LINE = '#22c55e'
+
+const RANGE_OPTIONS: { key: SalesRange; label: string; axisInterval: number }[] = [
+  { key: '7d', label: 'Last 7 days', axisInterval: 0 },
+  { key: '30d', label: 'Last 30 days', axisInterval: 4 },
+  { key: '1y', label: 'Last year', axisInterval: 0 },
 ]
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const [range, setRange] = useState<SalesRange>('7d')
 
   const { data: stats } = useDashboardStats()
-  const { data: sales = [] } = useSalesOverview(7)
+  const { data: sales = [] } = useSalesOverview(range)
   const { data: ordersByCategory = [] } = useOrdersByCategory()
   const { data: recentOrders = [] } = useRecentOrders(5)
   const { data: activity = [] } = useRecentActivity(6)
 
   const greeting = getGreeting()
+  const currentRange = RANGE_OPTIONS.find((o) => o.key === range)!
 
   return (
     <div className="dashboard">
@@ -78,8 +90,19 @@ export function Dashboard() {
             Here's what's happening with your store today.
           </p>
         </div>
-        <div className="dashboard__range">
-          <span className="dashboard__range-badge">Last 7 days</span>
+
+        <div className="dashboard__range-group">
+          {RANGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              className={`dashboard__range-btn ${
+                range === opt.key ? 'dashboard__range-btn--active' : ''
+              }`}
+              onClick={() => setRange(opt.key)}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -129,7 +152,7 @@ export function Dashboard() {
             <div>
               <h2 className="dashboard__card-title">Sales Overview</h2>
               <p className="dashboard__card-subtitle">
-                Revenue over the last 7 days
+                Revenue over the {currentRange.label.toLowerCase()}
               </p>
             </div>
             <div className="dashboard__card-icon dashboard__card-icon--indigo">
@@ -146,9 +169,23 @@ export function Dashboard() {
                   margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                 >
                   <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                    <linearGradient
+                      id="colorRevenue"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor={CHART_LINE}
+                        stopOpacity={0.28}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={CHART_LINE}
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
@@ -161,6 +198,7 @@ export function Dashboard() {
                     tick={{ fontSize: 11, fill: '#94a3b8' }}
                     axisLine={false}
                     tickLine={false}
+                    interval={currentRange.axisInterval}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: '#94a3b8' }}
@@ -178,15 +216,18 @@ export function Dashboard() {
                       fontSize: 12,
                       boxShadow: '0 4px 12px rgba(15,23,42,0.08)',
                     }}
-                    formatter={(value) => [formatPrice(Number(value ?? 0)), 'Revenue']}
+                    formatter={(value) => [
+                      formatPrice(Number(value ?? 0)),
+                      'Revenue',
+                    ]}
                   />
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#6366f1"
+                    stroke={CHART_LINE}
                     strokeWidth={2.5}
                     fill="url(#colorRevenue)"
-                    dot={{ r: 3, fill: '#6366f1', strokeWidth: 0 }}
+                    dot={{ r: 3, fill: CHART_LINE, strokeWidth: 0 }}
                     activeDot={{ r: 5 }}
                   />
                 </AreaChart>

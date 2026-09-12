@@ -85,53 +85,105 @@ export function useDashboardStats() {
 // ============================================
 // SALES OVERVIEW (last N days)
 // ============================================
-export function useSalesOverview(days: number = 7) {
+// ============================================
+// SALES OVERVIEW (range-aware)
+// ============================================
+export type SalesRange = '7d' | '30d' | '1y'
+
+export function useSalesOverview(range: SalesRange) {
   return useQuery({
-    queryKey: ['dashboard', 'sales', days],
+    queryKey: ['dashboard', 'sales', range],
     queryFn: async (): Promise<SalesPoint[]> => {
-      const from = new Date()
-      from.setHours(0, 0, 0, 0)
-      from.setDate(from.getDate() - (days - 1))
+      const now = new Date()
+
+      let startDate: Date
+      let bucketCount: number
+      let bucketType: 'day' | 'month'
+
+      if (range === '7d') {
+        bucketCount = 7
+        bucketType = 'day'
+        startDate = new Date(now)
+        startDate.setHours(0, 0, 0, 0)
+        startDate.setDate(startDate.getDate() - 6)
+      } else if (range === '30d') {
+        bucketCount = 30
+        bucketType = 'day'
+        startDate = new Date(now)
+        startDate.setHours(0, 0, 0, 0)
+        startDate.setDate(startDate.getDate() - 29)
+      } else {
+        // 1y — last 12 months, bucketed by month
+        bucketCount = 12
+        bucketType = 'month'
+        startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+      }
 
       const { data, error } = await supabase
         .from('orders')
         .select('total, created_at, status')
-        .gte('created_at', from.toISOString())
+        .gte('created_at', startDate.toISOString())
         .neq('status', 'CANCELLED')
 
       if (error) throw error
 
-      // Build a map of date → { revenue, orders }
-      const map = new Map<string, { revenue: number; orders: number }>()
+      // Initialize empty buckets
+      const buckets = new Map<string, { revenue: number; orders: number }>()
 
-      // Initialize all days
-      for (let i = 0; i < days; i++) {
-        const d = new Date(from)
-        d.setDate(from.getDate() + i)
-        const key = d.toISOString().slice(0, 10)
-        map.set(key, { revenue: 0, orders: 0 })
+      if (bucketType === 'day') {
+        for (let i = 0; i < bucketCount; i++) {
+          const d = new Date(startDate)
+          d.setDate(startDate.getDate() + i)
+          const key = d.toISOString().slice(0, 10)
+          buckets.set(key, { revenue: 0, orders: 0 })
+        }
+      } else {
+        for (let i = 0; i < bucketCount; i++) {
+          const d = new Date(
+            startDate.getFullYear(),
+            startDate.getMonth() + i,
+            1
+          )
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+            2,
+            '0'
+          )}`
+          buckets.set(key, { revenue: 0, orders: 0 })
+        }
       }
 
-      // Fill with actual orders
+      // Fill with real data
       for (const order of data ?? []) {
-        const key = new Date(order.created_at).toISOString().slice(0, 10)
-        const current = map.get(key)
-        if (current) {
-          current.revenue += Number(order.total || 0)
-          current.orders += 1
+        const d = new Date(order.created_at)
+        const key =
+          bucketType === 'day'
+            ? d.toISOString().slice(0, 10)
+            : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+
+        const bucket = buckets.get(key)
+        if (bucket) {
+          bucket.revenue += Number(order.total || 0)
+          bucket.orders += 1
         }
       }
 
       // Convert to array
       const result: SalesPoint[] = []
-      for (const [date, value] of map.entries()) {
-        const d = new Date(date)
-        const label = d.toLocaleDateString('en-US', {
-          weekday: 'short',
-          day: 'numeric',
-        })
+      for (const [key, value] of buckets.entries()) {
+        let label: string
+        if (bucketType === 'day') {
+          const d = new Date(key)
+          label = d.toLocaleDateString('en-US', {
+            weekday: 'short',
+            day: 'numeric',
+          })
+        } else {
+          const [year, month] = key.split('-')
+          const d = new Date(Number(year), Number(month) - 1, 1)
+          label = d.toLocaleDateString('en-US', { month: 'short' })
+        }
         result.push({
-          date,
+          date: key,
           label,
           revenue: Math.round(value.revenue * 100) / 100,
           orders: value.orders,

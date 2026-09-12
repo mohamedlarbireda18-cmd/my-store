@@ -55,15 +55,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}>
         {/* Brand */}
-        <div className="sidebar__brand">
-          <div className="sidebar__logo">
-            <span>M</span>
-          </div>
-          <span className="sidebar__brand-name">My Store</span>
-          <button className="sidebar__close" onClick={onClose} aria-label="Close menu">
-            <X size={18} />
-          </button>
-        </div>
+       <div className="sidebar__brand">
+  <img
+    src="/logo.png"
+    alt="DzairTech"
+    className="sidebar__logo-img"
+  />
+  <button className="sidebar__close" onClick={onClose} aria-label="Close menu">
+    <X size={18} />
+  </button>
+</div>
 
         {/* Nav */}
         <nav className="sidebar__nav">

@@ -36,7 +36,56 @@
   font-size: 14px;
   color: var(--admin-text-secondary);
 }
+/* ============================================
+   Range selector (segmented control)
+   ============================================ */
+.dashboard__range-group {
+  display: inline-flex;
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  box-shadow: var(--admin-shadow-sm);
+}
 
+.dashboard__range-btn {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--admin-transition);
+  white-space: nowrap;
+}
+
+.dashboard__range-btn:hover:not(.dashboard__range-btn--active) {
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.dashboard__range-btn--active {
+  background: var(--admin-primary);
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 178, 116, 0.25);
+}
+
+@media (max-width: 640px) {
+  .dashboard__range-group {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .dashboard__range-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+}
 .dashboard__range-badge {
   display: inline-flex;
   align-items: center;

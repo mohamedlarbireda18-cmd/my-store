@@ -30,7 +30,7 @@ export function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <div className="login-logo">M</div>
+        <img src="/logo.png" alt="DzairTech" className="login-logo-img" />
         <h1 className="login-title">Admin Login</h1>
         <p className="login-subtitle">Restricted access - authorized personnel only</p>
         <form onSubmit={handleSubmit} className="login-form">

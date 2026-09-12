@@ -230,14 +230,15 @@
 }
 
 .orders__phone {
-  color: var(--admin-primary);
+  color: var(--admin-text);
   text-decoration: none;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .orders__phone:hover {
+  color: var(--admin-primary);
   text-decoration: underline;
 }
 
