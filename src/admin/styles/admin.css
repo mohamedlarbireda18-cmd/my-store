@@ -120,7 +120,16 @@
   background: var(--admin-red);
   color: white;
 }
+.admin-btn--danger-outline {
+  background: white;
+  color: var(--admin-red);
+  border-color: var(--admin-red);
+}
 
+.admin-btn--danger-outline:hover:not(:disabled) {
+  background: var(--admin-red);
+  color: white;
+}
 .admin-btn--danger:hover:not(:disabled) {
   background: #dc2626;
 }

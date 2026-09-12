@@ -21,7 +21,6 @@ export interface CategoryInput {
 // ============================================
 // PRODUCT
 // ============================================
-
 export type ProductType = 'SIMPLE' | 'PACK'
 
 export interface Product {
@@ -147,6 +146,23 @@ export interface OrderItem {
   price: number
   quantity: number
   created_at: string
+}
+
+export interface OrderWithMeta extends Order {
+  wilaya: { id: string; name: string; code: string } | null
+  commune: { id: string; name: string } | null
+  items_count: number
+}
+
+export interface OrderItemDetailed extends OrderItem {
+  product: { id: string; name: string; slug: string; image_url: string | null } | null
+  variant: { id: string; size: string | null; color: string | null; sku: string | null } | null
+}
+
+export interface OrderDetail extends Order {
+  wilaya: { id: string; name: string; code: string } | null
+  commune: { id: string; name: string } | null
+  order_items: OrderItemDetailed[]
 }
 
 // ============================================

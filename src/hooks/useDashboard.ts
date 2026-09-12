@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import type { Order, OrderStatus } from '../types'
+import type { Order } from '../types'
 
 // ============================================
 // TYPES

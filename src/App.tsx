@@ -11,6 +11,7 @@ import { Products } from './admin/pages/Products/Products'
 import { ProductForm } from './admin/pages/Products/ProductForm'
 import { Orders } from './admin/pages/Orders/Orders'
 import { Settings } from './admin/pages/Settings/Settings'
+import { OrderDetail } from './admin/pages/Orders/OrderDetail'
 
 import './admin/styles/admin.css'
 
@@ -39,16 +40,28 @@ function App() {
               }
             />
 
-            <Route
-              path="/admin/orders"
+                      <Route
+                path="/admin/orders"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout>
+                      <Orders />
+                    </AdminLayout>
+                  </ProtectedRoute>
+                }
+              />
+
+                        <Route
+              path="/admin/orders/:id"
               element={
                 <ProtectedRoute>
                   <AdminLayout>
-                    <Orders />
+                    <OrderDetail />
                   </AdminLayout>
                 </ProtectedRoute>
               }
             />
+
 
             <Route
               path="/admin/categories"
