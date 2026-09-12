@@ -26,12 +26,98 @@ function App() {
             <Route path="/admin/login" element={<Login />} />
 
             {/* Protected admin routes */}
-            <Route path="/admin" element={<ProtectedRoute><AdminLayout><Dashboard /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/orders" element={<ProtectedRoute><AdminLayout><Orders /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/categories" element={<ProtectedRoute><AdminLayout><Categories /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/products" element={<ProtectedRoute><AdminLayout><Products /></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/delivery" element={<ProtectedRoute><AdminLayout><div>Delivery - coming soon</div></AdminLayout></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute><AdminLayout><Settings /></AdminLayout></ProtectedRoute>} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Dashboard />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/orders"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Orders />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/categories"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Categories />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/products"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Products />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Important: 'new' must come before ':id/edit' */}
+            <Route
+              path="/admin/products/new"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <div style={{ padding: 40, textAlign: 'center' }}>
+                      <h1>New Product (Phase 2)</h1>
+                    </div>
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/products/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <div style={{ padding: 40, textAlign: 'center' }}>
+                      <h1>Edit Product (Phase 2)</h1>
+                    </div>
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/delivery"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <div>Delivery - coming soon</div>
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <Settings />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Redirects */}
             <Route path="/admin/*" element={<Navigate to="/admin" replace />} />

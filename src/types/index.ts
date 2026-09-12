@@ -27,6 +27,7 @@ export interface Product {
   slug: string
   description: string | null
   category_id: string | null
+  image_url: string | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -37,6 +38,7 @@ export interface ProductInput {
   slug: string
   description?: string | null
   category_id?: string | null
+  image_url?: string | null
   is_active?: boolean
 }
 

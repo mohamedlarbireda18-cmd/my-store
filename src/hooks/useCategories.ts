@@ -120,3 +120,36 @@ export function useDeleteCategory() {
     },
   })
 }
+// Toggle category active status
+export function useToggleCategoryStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      is_active,
+    }: {
+      id: string
+      is_active: boolean
+    }): Promise<Category> => {
+      const { data, error } = await supabase
+        .from('categories')
+        .update({ is_active })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
+      toast.success(
+        `Category marked as ${data.is_active ? 'active' : 'inactive'}`
+      )
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update status')
+    },
+  })
+}
