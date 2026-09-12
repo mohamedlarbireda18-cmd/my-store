@@ -8,8 +8,10 @@ import { Login } from './admin/pages/Login/Login'
 import { Dashboard } from './admin/pages/Dashboard/Dashboard'
 import { Categories } from './admin/pages/Categories/Categories'
 import { Products } from './admin/pages/Products/Products'
+import { ProductForm } from './admin/pages/Products/ProductForm'
 import { Orders } from './admin/pages/Orders/Orders'
 import { Settings } from './admin/pages/Settings/Settings'
+
 import './admin/styles/admin.css'
 
 const queryClient = new QueryClient({
@@ -76,9 +78,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminLayout>
-                    <div style={{ padding: 40, textAlign: 'center' }}>
-                      <h1>New Product (Phase 2)</h1>
-                    </div>
+                    <ProductForm />
                   </AdminLayout>
                 </ProtectedRoute>
               }
@@ -89,9 +89,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminLayout>
-                    <div style={{ padding: 40, textAlign: 'center' }}>
-                      <h1>Edit Product (Phase 2)</h1>
-                    </div>
+                    <ProductForm />
                   </AdminLayout>
                 </ProtectedRoute>
               }

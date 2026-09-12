@@ -267,18 +267,18 @@ export function Products() {
                         {product.category?.name || '—'}
                       </td>
                       <td className="products__cell-price">{priceLabel}</td>
-                      <td>
-                        <span
-                          className={`products__stock ${
-                            totalStock === 0
-                              ? 'products__stock--out'
-                              : totalStock < 10
-                              ? 'products__stock--low'
-                              : ''
-                          }`}
-                        >
-                          {totalStock}
-                        </span>
+                        <td>
+                        {totalStock === 0 ? (
+                          <span className="products__stock products__stock--out">Out of stock</span>
+                        ) : (
+                          <span
+                            className={`products__stock ${
+                              totalStock < 10 ? 'products__stock--low' : ''
+                            }`}
+                          >
+                            {totalStock}
+                          </span>
+                        )}
                       </td>
                       <td>
                         <button

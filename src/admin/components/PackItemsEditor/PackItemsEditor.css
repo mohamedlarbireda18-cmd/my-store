@@ -1,0 +1,384 @@
+/* ============================================
+   Container
+   ============================================ */
+.pack-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ============================================
+   Simplified picker (single dropdown + add button)
+   ============================================ */
+.pack-editor__picker-simple {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.pack-editor__picker-simple .pack-editor__select {
+  flex: 1;
+  height: 38px;
+}
+
+.pack-editor__picker-simple .pack-editor__add-btn {
+  height: 38px;
+  flex-shrink: 0;
+  padding: 0 18px;
+}
+
+/* Legacy picker (kept for safety — unused now) */
+.pack-editor__picker {
+  display: grid;
+  grid-template-columns: 1.4fr 1.6fr 100px auto;
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+}
+
+.pack-editor__picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pack-editor__picker-field--qty {
+  max-width: 100px;
+}
+
+.pack-editor__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ============================================
+   Inputs
+   ============================================ */
+.pack-editor__select,
+.pack-editor__input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: white;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--admin-text);
+  transition: all var(--admin-transition);
+}
+
+.pack-editor__select:focus,
+.pack-editor__input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.pack-editor__select:disabled {
+  background: var(--admin-border-light);
+  cursor: not-allowed;
+  color: var(--admin-text-muted);
+}
+
+.pack-editor__add-btn {
+  height: 38px;
+}
+
+/* ============================================
+   Hint
+   ============================================ */
+.pack-editor__hint {
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  line-height: 1.5;
+}
+
+/* ============================================
+   Empty state
+   ============================================ */
+.pack-editor__empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--admin-text-muted);
+  background: var(--admin-bg);
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius);
+}
+
+.pack-editor__empty p {
+  font-size: 13px;
+  margin: 12px 0 0;
+}
+
+/* ============================================
+   Items list (default layout — legacy)
+   ============================================ */
+.pack-editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pack-editor__item {
+  display: grid;
+  grid-template-columns: 44px 1fr 80px 130px 36px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--admin-border-light);
+  border-radius: 10px;
+  background: white;
+  transition: border-color var(--admin-transition);
+}
+
+.pack-editor__item:hover {
+  border-color: var(--admin-border);
+}
+
+/* Simplified item layout: image | info | price | remove */
+.pack-editor__item--simple {
+  grid-template-columns: 44px 1fr 120px 36px;
+}
+
+.pack-editor__item-image {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-text-muted);
+  flex-shrink: 0;
+}
+
+.pack-editor__item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pack-editor__item-info {
+  min-width: 0;
+}
+
+.pack-editor__item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-navy);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pack-editor__item-variant {
+  font-size: 12px;
+  color: var(--admin-text-secondary);
+  margin-top: 2px;
+}
+
+.pack-editor__item-warn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--admin-orange);
+  font-weight: 500;
+}
+
+.pack-editor__item-qty {
+  display: flex;
+  justify-content: center;
+}
+
+.pack-editor__qty-input {
+  width: 60px;
+  height: 34px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  font-size: 13px;
+  font-family: inherit;
+  text-align: center;
+  color: var(--admin-text);
+}
+
+.pack-editor__qty-input:focus {
+  outline: none;
+  background: white;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.pack-editor__item-price {
+  text-align: right;
+}
+
+.pack-editor__item-unit {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+.pack-editor__item-total {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-navy);
+  margin-top: 2px;
+}
+
+.pack-editor__item-remove {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--admin-transition);
+}
+
+.pack-editor__item-remove:hover {
+  background: var(--admin-red-light);
+  color: var(--admin-red);
+}
+
+/* ============================================
+   Summary
+   ============================================ */
+.pack-editor__summary {
+  padding: 14px 16px;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border-light);
+  border-radius: var(--admin-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pack-editor__summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+}
+
+.pack-editor__summary-real {
+  font-weight: 600;
+  color: var(--admin-text);
+  text-decoration: line-through;
+}
+
+.pack-editor__summary-pack {
+  font-weight: 700;
+  color: var(--admin-navy);
+}
+
+.pack-editor__summary-row--savings {
+  padding-top: 8px;
+  border-top: 1px dashed var(--admin-border);
+  color: var(--admin-green);
+  font-weight: 600;
+}
+
+.pack-editor__summary-row--savings span:last-child {
+  font-size: 14px;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 900px) {
+  .pack-editor__picker {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pack-editor__picker-field--qty {
+    max-width: none;
+  }
+
+  .pack-editor__add-btn {
+    grid-column: span 2;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Simplified picker: stack */
+  .pack-editor__picker-simple {
+    flex-direction: column;
+  }
+
+  .pack-editor__picker-simple .pack-editor__add-btn {
+    justify-content: center;
+  }
+
+  /* Legacy picker */
+  .pack-editor__picker {
+    grid-template-columns: 1fr;
+  }
+
+  .pack-editor__add-btn {
+    grid-column: span 1;
+  }
+
+  /* Simplified item layout on mobile */
+  .pack-editor__item--simple {
+    grid-template-columns: 44px 1fr 36px;
+    grid-template-areas:
+      "img info remove"
+      ". price price";
+    row-gap: 8px;
+  }
+
+  .pack-editor__item--simple .pack-editor__item-image { grid-area: img; }
+  .pack-editor__item--simple .pack-editor__item-info { grid-area: info; }
+  .pack-editor__item--simple .pack-editor__item-remove { grid-area: remove; }
+  .pack-editor__item--simple .pack-editor__item-price {
+    grid-area: price;
+    text-align: left;
+  }
+
+  /* Legacy item layout on mobile */
+  .pack-editor__item:not(.pack-editor__item--simple) {
+    grid-template-columns: 44px 1fr 36px;
+    grid-template-areas:
+      "img info remove"
+      "qty qty price";
+    row-gap: 8px;
+  }
+
+  .pack-editor__item:not(.pack-editor__item--simple) .pack-editor__item-image {
+    grid-area: img;
+  }
+  .pack-editor__item:not(.pack-editor__item--simple) .pack-editor__item-info {
+    grid-area: info;
+  }
+  .pack-editor__item:not(.pack-editor__item--simple) .pack-editor__item-remove {
+    grid-area: remove;
+  }
+  .pack-editor__item:not(.pack-editor__item--simple) .pack-editor__item-qty {
+    grid-area: qty;
+    justify-content: flex-start;
+  }
+  .pack-editor__item:not(.pack-editor__item--simple) .pack-editor__item-price {
+    grid-area: price;
+  }
+}

@@ -44,3 +44,24 @@ export function formatPhone(phone: string): string {
   }
   return phone
 }
+export type OrderStatus = 'PENDING' | 'ACCEPTED_PENDING' | 'DONE' | 'CANCELLED'
+
+export function orderStatusLabel(status: OrderStatus): string {
+  switch (status) {
+    case 'PENDING': return 'Pending'
+    case 'ACCEPTED_PENDING': return 'Accepted'
+    case 'DONE': return 'Done'
+    case 'CANCELLED': return 'Cancelled'
+  }
+}
+
+export function orderStatusVariant(
+  status: OrderStatus
+): 'warning' | 'info' | 'success' | 'danger' {
+  switch (status) {
+    case 'PENDING': return 'warning'
+    case 'ACCEPTED_PENDING': return 'info'
+    case 'DONE': return 'success'
+    case 'CANCELLED': return 'danger'
+  }
+}

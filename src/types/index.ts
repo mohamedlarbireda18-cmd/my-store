@@ -21,6 +21,9 @@ export interface CategoryInput {
 // ============================================
 // PRODUCT
 // ============================================
+
+export type ProductType = 'SIMPLE' | 'PACK'
+
 export interface Product {
   id: string
   name: string
@@ -28,6 +31,9 @@ export interface Product {
   description: string | null
   category_id: string | null
   image_url: string | null
+  images: string[] | null
+  product_type: ProductType
+  compare_price: number | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -39,7 +45,27 @@ export interface ProductInput {
   description?: string | null
   category_id?: string | null
   image_url?: string | null
+  images?: string[] | null
+  product_type?: ProductType
+  compare_price?: number | null
   is_active?: boolean
+}
+
+// ============================================
+// PACK ITEMS
+// ============================================
+export interface PackItem {
+  id: string
+  pack_id: string
+  variant_id: string
+  quantity: number
+  created_at: string
+}
+
+export interface PackItemInput {
+  pack_id: string
+  variant_id: string
+  quantity: number
 }
 
 // ============================================

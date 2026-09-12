@@ -30,47 +30,7 @@
   background: var(--admin-bg);
 }
 
-/* Search */
-.admin-header__search {
-  position: relative;
-  flex: 1;
-  max-width: 440px;
-}
-
-.admin-header__search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--admin-text-muted);
-  pointer-events: none;
-}
-
-.admin-header__search-input {
-  width: 100%;
-  height: 40px;
-  padding: 0 16px 0 42px;
-  border-radius: 10px;
-  border: 1px solid var(--admin-border);
-  background: var(--admin-bg);
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--admin-text);
-  transition: all var(--admin-transition);
-}
-
-.admin-header__search-input::placeholder {
-  color: var(--admin-text-muted);
-}
-
-.admin-header__search-input:focus {
-  outline: none;
-  background: white;
-  border-color: var(--admin-primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
-}
-
-/* Actions */
+/* Actions (right side) */
 .admin-header__actions {
   margin-left: auto;
   display: flex;
@@ -107,11 +67,6 @@
   border-radius: 50%;
   background: var(--admin-red);
   border: 2px solid white;
-}
-
-/* Search toggle button (mobile only) */
-.admin-header__icon-btn--search {
-  display: none;
 }
 
 /* Profile */
@@ -204,128 +159,13 @@
   color: var(--admin-text-muted);
 }
 
-/* ============================================
-   Search overlay (mobile only)
-   ============================================ */
-.admin-header__search-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  height: var(--admin-header-height);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  background: white;
-  border-bottom: 1px solid var(--admin-border);
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-  animation: slideDown 200ms ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.admin-header__search-overlay-icon {
-  color: var(--admin-text-muted);
-  flex-shrink: 0;
-}
-
-.admin-header__search-overlay-input {
-  flex: 1;
-  height: 40px;
-  border: none;
-  background: transparent;
-  font-size: 15px;
-  font-family: inherit;
-  color: var(--admin-text);
-  outline: none;
-}
-
-.admin-header__search-overlay-input::placeholder {
-  color: var(--admin-text-muted);
-}
-
-.admin-header__search-overlay-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: none;
-  background: var(--admin-bg);
-  color: var(--admin-text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all var(--admin-transition);
-}
-
-.admin-header__search-overlay-close:hover {
-  background: var(--admin-border-light);
-  color: var(--admin-text);
-}
-
-/* ============================================
-   Responsive
-   ============================================ */
-@media (max-width: 900px) {
-  /* Hide inline search, show search toggle button */
-  .admin-header__search {
-    display: none;
-  }
-  .admin-header__icon-btn--search {
-    display: flex;
-  }
-}
-
-@media (max-width: 640px) {
-  .admin-header {
-    padding: 0 16px;
-    gap: 8px;
-  }
-  .admin-header__profile-name,
-  .admin-header__chevron {
-    display: none;
-  }
-}
-
-/* Hide overlay on desktop */
-@media (min-width: 901px) {
-  .admin-header__search-overlay {
-    display: none;
-  }
-}
-/* ============================================
-   Responsive
-   ============================================ */
-
-/* Show hamburger on < 1024px (when sidebar is hidden) */
+/* Responsive */
 @media (max-width: 1023px) {
   .admin-header__menu-btn {
     display: flex;
   }
 }
 
-@media (max-width: 900px) {
-  /* Hide inline search, show search toggle button */
-  .admin-header__search {
-    display: none;
-  }
-  .admin-header__icon-btn--search {
-    display: flex;
-  }
-}
-
 @media (max-width: 640px) {
   .admin-header {
     padding: 0 16px;
@@ -333,13 +173,6 @@
   }
   .admin-header__profile-name,
   .admin-header__chevron {
-    display: none;
-  }
-}
-
-/* Hide overlay on desktop */
-@media (min-width: 901px) {
-  .admin-header__search-overlay {
     display: none;
   }
 }

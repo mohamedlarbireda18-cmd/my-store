@@ -3,6 +3,15 @@ import { supabase } from '../lib/supabase'
 import type { Category, CategoryInput } from '../types'
 import toast from 'react-hot-toast'
 
+function getFriendlyError(error: Error & { code?: string }): string {
+  const code = (error as any).code
+  switch (code) {
+    case '23505':
+      return 'A category with this slug already exists. Please choose a different slug.'
+    default:
+      return error.message || 'Something went wrong'
+  }
+}
 const CATEGORIES_KEY = ['categories']
 
 // Fetch all categories (admin - includes inactive)
@@ -60,9 +69,9 @@ export function useCreateCategory() {
       queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
       toast.success('Category created successfully')
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create category')
-    },
+   onError: (error: Error & { code?: string }) => {
+  toast.error(getFriendlyError(error))
+},
   })
 }
 
@@ -92,9 +101,9 @@ export function useUpdateCategory() {
       queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY })
       toast.success('Category updated successfully')
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update category')
-    },
+   onError: (error: Error & { code?: string }) => {
+  toast.error(getFriendlyError(error))
+},
   })
 }
 

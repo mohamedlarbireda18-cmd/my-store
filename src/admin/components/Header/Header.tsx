@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Menu, Search, Bell, ChevronDown, X } from 'lucide-react'
+import { Menu, Bell, ChevronDown } from 'lucide-react'
 import { useAdminAuth } from '../../auth/AdminAuthContext'
 import './Header.css'
 
@@ -20,9 +20,7 @@ function getInitials(email: string | null): string {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const [open, setOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const searchRef = useRef<HTMLDivElement>(null)
   const { adminEmail } = useAdminAuth()
 
   useEffect(() => {
@@ -33,45 +31,33 @@ export function Header({ onMenuClick }: HeaderProps) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Auto-focus the search input when opened
-  useEffect(() => {
-    if (searchOpen) {
-      const input = searchRef.current?.querySelector('input')
-      input?.focus()
-    }
-  }, [searchOpen])
-
   return (
     <header className="admin-header">
-      <button className="admin-header__menu-btn" onClick={onMenuClick} aria-label="Open menu">
+      <button
+        className="admin-header__menu-btn"
+        onClick={onMenuClick}
+        aria-label="Open menu"
+      >
         <Menu size={20} />
       </button>
 
-      <div className="admin-header__search">
-        <Search size={16} className="admin-header__search-icon" />
-        <input type="text" placeholder="Search anything..." className="admin-header__search-input" />
-      </div>
-
       <div className="admin-header__actions">
-        {/* Search toggle (mobile only) */}
-        <button
-          className="admin-header__icon-btn admin-header__icon-btn--search"
-          onClick={() => setSearchOpen(true)}
-          aria-label="Search"
-        >
-          <Search size={19} />
-        </button>
-
         <button className="admin-header__icon-btn" aria-label="Notifications">
           <Bell size={19} />
           <span className="admin-header__notif-dot" />
         </button>
 
         <div className="admin-header__profile" ref={ref}>
-          <button className="admin-header__profile-btn" onClick={() => setOpen(!open)}>
+          <button
+            className="admin-header__profile-btn"
+            onClick={() => setOpen(!open)}
+          >
             <div className="admin-header__avatar">{getInitials(adminEmail)}</div>
             <span className="admin-header__profile-name">Admin</span>
-            <ChevronDown size={16} className={`admin-header__chevron ${open ? 'open' : ''}`} />
+            <ChevronDown
+              size={16}
+              className={`admin-header__chevron ${open ? 'open' : ''}`}
+            />
           </button>
 
           {open && (
@@ -91,25 +77,6 @@ export function Header({ onMenuClick }: HeaderProps) {
           )}
         </div>
       </div>
-
-      {/* Full-screen search overlay (mobile only) */}
-      {searchOpen && (
-        <div className="admin-header__search-overlay" ref={searchRef}>
-          <Search size={18} className="admin-header__search-overlay-icon" />
-          <input
-            type="text"
-            placeholder="Search anything..."
-            className="admin-header__search-overlay-input"
-          />
-          <button
-            className="admin-header__search-overlay-close"
-            onClick={() => setSearchOpen(false)}
-            aria-label="Close search"
-          >
-            <X size={20} />
-          </button>
-        </div>
-      )}
     </header>
   )
 }

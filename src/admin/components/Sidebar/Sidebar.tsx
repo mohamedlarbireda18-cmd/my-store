@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   Package,
@@ -38,7 +38,7 @@ function getInitials(email: string | null): string {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const navigate = useNavigate()
+
   const { logout, adminEmail } = useAdminAuth()
 
   const handleLinkClick = () => {
