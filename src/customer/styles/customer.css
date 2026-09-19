@@ -1,0 +1,236 @@
+/* ============================================
+   CUSTOMER DESIGN TOKENS
+   ============================================ */
+:root {
+  --c-primary: #00b274;
+  --c-primary-hover: #009962;
+  --c-primary-light: #e6f7f0;
+  --c-primary-lighter: #f0fbf7;
+
+  --c-navy: #0f172a;
+  --c-text: #1e293b;
+  --c-text-secondary: #64748b;
+  --c-text-muted: #94a3b8;
+  --c-border: #e2e8f0;
+  --c-border-light: #f1f5f9;
+  --c-bg: #f8fafc;
+  --c-bg-card: #ffffff;
+
+  --c-danger: #ef4444;
+  --c-danger-light: #fee2e2;
+  --c-warning: #f59e0b;
+  --c-warning-light: #fef3c7;
+  --c-success: #10b981;
+  --c-success-light: #d1fae5;
+
+  --c-radius-sm: 8px;
+  --c-radius: 12px;
+  --c-radius-lg: 16px;
+  --c-radius-xl: 24px;
+
+  --c-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --c-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --c-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --c-shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.12);
+
+  --c-sidebar-width: 240px;
+  --c-topbar-height: 68px;
+  --c-max-width: 1400px;
+
+  --c-transition: 150ms ease;
+}
+
+/* ============================================
+   BASE
+   ============================================ */
+.customer-app {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--c-text);
+  background: var(--c-bg);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.customer-app * {
+  box-sizing: border-box;
+}
+
+.customer-app a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.customer-app button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.c-container {
+  width: 100%;
+  max-width: var(--c-max-width);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+@media (min-width: 1024px) {
+  .c-container {
+    padding: 0 32px;
+  }
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: all var(--c-transition);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.c-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.c-btn--primary {
+  background: var(--c-primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 178, 116, 0.25);
+}
+
+.c-btn--primary:hover:not(:disabled) {
+  background: var(--c-primary-hover);
+  box-shadow: 0 6px 20px rgba(0, 178, 116, 0.35);
+  transform: translateY(-1px);
+}
+
+.c-btn--secondary {
+  background: white;
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+
+.c-btn--secondary:hover:not(:disabled) {
+  border-color: var(--c-navy);
+  background: var(--c-bg);
+}
+
+.c-btn--outline {
+  background: white;
+  color: var(--c-primary);
+  border-color: var(--c-primary);
+}
+
+.c-btn--outline:hover:not(:disabled) {
+  background: var(--c-primary);
+  color: white;
+}
+
+.c-btn--ghost {
+  background: transparent;
+  color: var(--c-text);
+}
+
+.c-btn--ghost:hover:not(:disabled) {
+  background: var(--c-bg);
+}
+
+.c-btn--sm { padding: 8px 14px; font-size: 13px; }
+.c-btn--lg { padding: 13px 26px; font-size: 15px; }
+.c-btn--block { width: 100%; }
+
+/* ============================================
+   BADGES
+   ============================================ */
+.c-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.c-badge--success { background: var(--c-success-light); color: #047857; }
+.c-badge--danger { background: var(--c-danger-light); color: #b91c1c; }
+.c-badge--warning { background: var(--c-warning-light); color: #b45309; }
+.c-badge--primary { background: var(--c-primary-light); color: var(--c-primary); }
+
+/* ============================================
+   CARDS / SECTIONS
+   ============================================ */
+.c-card {
+  background: var(--c-bg-card);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--c-radius-lg);
+  box-shadow: var(--c-shadow-sm);
+}
+
+.c-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--c-navy);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.c-page-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--c-navy);
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.c-page-subtitle {
+  font-size: 14px;
+  color: var(--c-text-secondary);
+  margin: 0;
+}
+
+/* ============================================
+   SKELETON
+   ============================================ */
+@keyframes cShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.c-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--c-border-light) 25%,
+    #e8eef5 50%,
+    var(--c-border-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: cShimmer 1.5s infinite;
+  border-radius: var(--c-radius-sm);
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+.customer-app ::-webkit-scrollbar { width: 8px; height: 8px; }
+.customer-app ::-webkit-scrollbar-track { background: transparent; }
+.customer-app ::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: 4px;
+}
+.customer-app ::-webkit-scrollbar-thumb:hover { background: var(--c-text-muted); }

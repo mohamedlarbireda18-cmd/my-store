@@ -26,11 +26,13 @@ const NAV_ITEMS = [
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
-// Helper: get initials from email (e.g. "admin@mystore.com" → "AD")
-function getInitials(email: string | null): string {
-  if (!email) return 'AD'
-  const name = email.split('@')[0]
-  const parts = name.split(/[._-]/).filter(Boolean)
+// Helper: get initials from a name or email
+// e.g. "Mohamed Larbi" → "ML", "admin@mystore.com" → "AD"
+function getInitials(input: string | null | undefined): string {
+  if (!input) return 'AD'
+  // If it's an email, strip the domain
+  const name = input.includes('@') ? input.split('@')[0] : input
+  const parts = name.split(/[._\s-]/).filter(Boolean)
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase()
   }
@@ -38,8 +40,7 @@ function getInitials(email: string | null): string {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-
-  const { logout, adminEmail } = useAdminAuth()
+  const { logout, adminEmail, adminName } = useAdminAuth()
 
   const handleLinkClick = () => {
     if (window.innerWidth < 1024) onClose()
@@ -55,16 +56,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}>
         {/* Brand */}
-       <div className="sidebar__brand">
-  <img
-    src="/logo.png"
-    alt="DzairTech"
-    className="sidebar__logo-img"
-  />
-  <button className="sidebar__close" onClick={onClose} aria-label="Close menu">
-    <X size={18} />
-  </button>
-</div>
+        <div className="sidebar__brand">
+          <img src="/logo.png" alt="DzairTech" className="sidebar__logo-img" />
+          <button
+            className="sidebar__close"
+            onClick={onClose}
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
         {/* Nav */}
         <nav className="sidebar__nav">
@@ -87,9 +88,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Admin profile */}
         <div className="sidebar__footer">
           <div className="sidebar__profile">
-            <div className="sidebar__avatar">{getInitials(adminEmail)}</div>
+            <div className="sidebar__avatar">
+              {getInitials(adminName || adminEmail)}
+            </div>
             <div className="sidebar__profile-info">
-              <span className="sidebar__profile-name">Admin</span>
+              <span className="sidebar__profile-name">
+                {adminName || 'Admin'}
+              </span>
               <span className="sidebar__profile-email" title={adminEmail || ''}>
                 {adminEmail || '—'}
               </span>

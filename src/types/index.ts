@@ -190,3 +190,23 @@ export interface CartItem {
   image_url?: string | null
   max_stock: number
 }
+// ============================================
+// STORE SETTINGS
+// ============================================
+export interface StoreSettings {
+  id: number
+  store_name: string
+  store_phone: string | null
+  store_email: string | null
+  store_address: string | null
+  order_prefix: string
+  auto_accept_orders: boolean
+  allow_order_notes: boolean
+  store_open: boolean
+  show_out_of_stock: boolean
+  updated_at: string
+}
+
+export type StoreSettingsInput = Partial<
+  Omit<StoreSettings, 'id' | 'updated_at'>
+>

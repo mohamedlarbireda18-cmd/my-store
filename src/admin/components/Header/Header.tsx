@@ -7,11 +7,12 @@ interface HeaderProps {
   onMenuClick: () => void
 }
 
-// Helper: get initials from email (e.g. "admin@mystore.com" → "AD")
-function getInitials(email: string | null): string {
-  if (!email) return 'AD'
-  const name = email.split('@')[0]
-  const parts = name.split(/[._-]/).filter(Boolean)
+// Helper: get initials from a name or email
+// e.g. "Mohamed Larbi" → "ML", "admin@mystore.com" → "AD"
+function getInitials(input: string | null | undefined): string {
+  if (!input) return 'AD'
+  const name = input.includes('@') ? input.split('@')[0] : input
+  const parts = name.split(/[._\s-]/).filter(Boolean)
   if (parts.length >= 2) {
     return (parts[0][0] + parts[1][0]).toUpperCase()
   }
@@ -21,7 +22,7 @@ function getInitials(email: string | null): string {
 export function Header({ onMenuClick }: HeaderProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const { adminEmail } = useAdminAuth()
+  const { adminEmail, adminName } = useAdminAuth()
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -30,6 +31,9 @@ export function Header({ onMenuClick }: HeaderProps) {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  const displayName = adminName || 'Admin'
+  const initials = getInitials(adminName || adminEmail)
 
   return (
     <header className="admin-header">
@@ -52,8 +56,8 @@ export function Header({ onMenuClick }: HeaderProps) {
             className="admin-header__profile-btn"
             onClick={() => setOpen(!open)}
           >
-            <div className="admin-header__avatar">{getInitials(adminEmail)}</div>
-            <span className="admin-header__profile-name">Admin</span>
+            <div className="admin-header__avatar">{initials}</div>
+            <span className="admin-header__profile-name">{displayName}</span>
             <ChevronDown
               size={16}
               className={`admin-header__chevron ${open ? 'open' : ''}`}
@@ -64,11 +68,16 @@ export function Header({ onMenuClick }: HeaderProps) {
             <div className="admin-header__dropdown">
               <div className="admin-header__dropdown-header">
                 <div className="admin-header__avatar admin-header__avatar--lg">
-                  {getInitials(adminEmail)}
+                  {initials}
                 </div>
                 <div>
-                  <div className="admin-header__dropdown-name">Admin</div>
-                  <div className="admin-header__dropdown-email" title={adminEmail || ''}>
+                  <div className="admin-header__dropdown-name">
+                    {displayName}
+                  </div>
+                  <div
+                    className="admin-header__dropdown-email"
+                    title={adminEmail || ''}
+                  >
                     {adminEmail || '—'}
                   </div>
                 </div>

@@ -1,0 +1,377 @@
+/* ============================================
+   Page
+   ============================================ */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ============================================
+   Tabs
+   ============================================ */
+.settings__tabs {
+  display: inline-flex;
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 2px;
+  margin-bottom: 24px;
+  box-shadow: var(--admin-shadow-sm);
+  width: fit-content;
+}
+
+.settings__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--admin-transition);
+  white-space: nowrap;
+}
+
+.settings__tab:hover:not(.settings__tab--active) {
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.settings__tab--active {
+  background: var(--admin-primary);
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 178, 116, 0.25);
+}
+
+/* ============================================
+   Panel
+   ============================================ */
+.settings__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 820px;
+}
+
+.settings__card {
+  padding: 24px;
+}
+
+.settings__section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--admin-navy);
+  margin: 0 0 20px;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================
+   Avatar row (Profile)
+   ============================================ */
+.settings__avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00b274 0%, #007a4d 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 178, 116, 0.3);
+}
+
+.settings__avatar-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--admin-navy);
+  line-height: 1.3;
+}
+
+.settings__avatar-email {
+  font-size: 13px;
+  color: var(--admin-text-secondary);
+  margin-top: 2px;
+}
+
+/* ============================================
+   Fields
+   ============================================ */
+.settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.settings__field:last-child {
+  margin-bottom: 0;
+}
+
+.settings__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--admin-text);
+}
+
+.settings__label-lock {
+  color: var(--admin-text-muted);
+}
+
+.settings__input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-bg);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--admin-text);
+  transition: all var(--admin-transition);
+}
+
+.settings__input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+.settings__input:focus {
+  outline: none;
+  background: white;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px rgba(0, 178, 116, 0.12);
+}
+
+.settings__input--readonly {
+  background: var(--admin-border-light);
+  color: var(--admin-text-secondary);
+  cursor: not-allowed;
+}
+
+.settings__textarea {
+  height: auto;
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+
+.settings__hint {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+}
+
+/* 2-column grid for related fields */
+.settings__grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.settings__grid-2 .settings__field {
+  margin-bottom: 0;
+}
+
+/* ============================================
+   Card footer
+   ============================================ */
+.settings__card-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 20px;
+  margin-top: 4px;
+  border-top: 1px solid var(--admin-border-light);
+}
+
+/* ============================================
+   Action rows
+   ============================================ */
+.settings__action-row,
+.settings__toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--admin-border-light);
+}
+
+.settings__action-row:first-of-type,
+.settings__toggle-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.settings__action-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings__action-icon--indigo {
+  background: var(--admin-primary-light);
+  color: var(--admin-primary);
+}
+.settings__action-icon--green {
+  background: var(--admin-green-light);
+  color: #047857;
+}
+.settings__action-icon--orange {
+  background: var(--admin-orange-light);
+  color: #b45309;
+}
+.settings__action-icon--danger {
+  background: var(--admin-red-light);
+  color: var(--admin-red);
+}
+
+.settings__action-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings__action-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-navy);
+  line-height: 1.3;
+}
+
+.settings__action-desc {
+  font-size: 12.5px;
+  color: var(--admin-text-secondary);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+/* ============================================
+   Toggle switch
+   ============================================ */
+.settings__switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.settings__switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.settings__switch-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--admin-border);
+  border-radius: 999px;
+  transition: background var(--admin-transition);
+}
+
+.settings__switch-slider::before {
+  content: '';
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform var(--admin-transition);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.settings__switch input:checked + .settings__switch-slider {
+  background: var(--admin-primary);
+}
+
+.settings__switch input:checked + .settings__switch-slider::before {
+  transform: translateX(20px);
+}
+
+.settings__switch input:focus-visible + .settings__switch-slider {
+  box-shadow: 0 0 0 3px rgba(0, 178, 116, 0.2);
+}
+
+/* ============================================
+   Save bar
+   ============================================ */
+.settings__save-bar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ============================================
+   Loading
+   ============================================ */
+.settings__loading {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 640px) {
+  .settings__grid-2 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .settings__card {
+    padding: 20px;
+  }
+
+  .settings__tabs {
+    width: 100%;
+  }
+
+  .settings__tab {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 12px;
+  }
+
+  .settings__action-row,
+  .settings__toggle-row {
+    flex-wrap: wrap;
+  }
+
+  .settings__action-row .admin-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .settings__avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 18px;
+  }
+}

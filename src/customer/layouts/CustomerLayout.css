@@ -1,0 +1,16 @@
+.c-layout__main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.c-layout__content {
+  flex: 1;
+  padding: 24px 0 60px;
+}
+
+@media (min-width: 1024px) {
+  .c-layout__main {
+    margin-left: var(--c-sidebar-width);
+  }
+}
