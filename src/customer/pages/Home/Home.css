@@ -81,7 +81,7 @@
   margin-top: 2px;
 }
 
-/* Hero visual (image above the green rectangle) */
+/* Hero visual */
 .c-home__hero-visual {
   display: flex;
   position: relative;
@@ -159,146 +159,186 @@
 }
 
 /* ============================================
-   Promo row
+   Promo row — ENHANCED
    ============================================ */
 .c-home__promo {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 20px;
   margin-bottom: 40px;
 }
 
+/* Special offer — big & bold */
 .c-home__offer {
-  background: linear-gradient(135deg, #e6f7f0 0%, #f0fbf7 100%);
-  border-radius: var(--c-radius-lg);
-  padding: 24px;
+  position: relative;
+  background: linear-gradient(135deg, #00b274 0%, #007a4d 100%);
+  border-radius: var(--c-radius-xl);
+  padding: 40px 32px;
+  overflow: hidden;
+  color: white;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  overflow: hidden;
+  min-height: 280px;
+  isolation: isolate;
+}
+
+/* Decorative circles */
+.c-home__offer::before,
+.c-home__offer::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.c-home__offer::before {
+  width: 320px;
+  height: 320px;
+  top: -120px;
+  right: -80px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.04) 60%,
+    transparent 100%
+  );
+}
+
+.c-home__offer::after {
+  width: 200px;
+  height: 200px;
+  bottom: -60px;
+  left: -60px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.12) 0%,
+    transparent 70%
+  );
+}
+
+.c-home__offer-content {
+  position: relative;
+  z-index: 1;
+  max-width: 460px;
 }
 
 .c-home__offer-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
-  background: white;
+  background: rgba(255, 255, 255, 0.95);
   color: var(--c-primary);
   font-size: 11.5px;
-  font-weight: 600;
-  margin-bottom: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
 }
 
 .c-home__offer-title {
-  font-size: 24px;
+  font-size: 40px;
   font-weight: 800;
-  color: var(--c-navy);
-  letter-spacing: -0.02em;
-  margin: 0 0 8px;
-  line-height: 1.15;
+  color: white;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+  line-height: 1.05;
 }
 
 .c-home__offer-title span {
-  color: var(--c-primary);
+  display: inline-block;
+  background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #fde68a;
 }
 
 .c-home__offer-desc {
-  font-size: 13.5px;
-  color: var(--c-text-secondary);
-  margin: 0 0 16px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0 0 24px;
+  line-height: 1.55;
+  max-width: 360px;
 }
 
-/* Why shop */
+.c-home__offer .c-btn--primary {
+  background: white;
+  color: var(--c-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.c-home__offer .c-btn--primary:hover:not(:disabled) {
+  background: #f0fbf7;
+  color: var(--c-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Why shop with us — cleaner card */
 .c-home__why {
   background: white;
   border: 1px solid var(--c-border-light);
-  border-radius: var(--c-radius-lg);
-  padding: 24px;
+  border-radius: var(--c-radius-xl);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-shadow: var(--c-shadow-sm);
 }
 
 .c-home__why-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
   color: var(--c-navy);
-  margin: 0 0 16px;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .c-home__why-items {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 
 .c-home__why-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .c-home__why-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   background: var(--c-primary-light);
   color: var(--c-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: all var(--c-transition);
+}
+
+.c-home__why-item:hover .c-home__why-icon {
+  background: var(--c-primary);
+  color: white;
+  transform: scale(1.05);
 }
 
 .c-home__why-item-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--c-navy);
-  line-height: 1.3;
-}
-
-.c-home__why-item-desc {
-  font-size: 12px;
-  color: var(--c-text-secondary);
-  margin-top: 2px;
-}
-
-/* ============================================
-   Categories
-   ============================================ */
-.c-home__categories {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.c-home__category {
-  background: white;
-  border: 1px solid var(--c-border-light);
-  border-radius: var(--c-radius-lg);
-  padding: 20px 18px;
-  transition: all 220ms ease;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.c-home__category:hover {
-  border-color: var(--c-primary);
-  box-shadow: var(--c-shadow-md);
-  transform: translateY(-2px);
-}
-
-.c-home__category-name {
   font-size: 14.5px;
   font-weight: 700;
   color: var(--c-navy);
   line-height: 1.3;
 }
 
-.c-home__category-count {
+.c-home__why-item-desc {
   font-size: 12.5px;
-  color: var(--c-text-muted);
+  color: var(--c-text-secondary);
+  margin-top: 3px;
 }
 
 /* ============================================
@@ -314,11 +354,8 @@
   }
 
   .c-home__promo {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .c-home__categories {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20px;
   }
 }
 
@@ -341,8 +378,102 @@
     font-size: 16px;
   }
 
-  .c-home__categories {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+  .c-home__offer {
+    padding: 48px 40px;
+    min-height: 320px;
+  }
+
+  .c-home__offer-title {
+    font-size: 48px;
+  }
+}
+/* ============================================
+   Social links
+   ============================================ */
+.c-home__social {
+  text-align: center;
+  padding: 32px 20px 8px;
+}
+
+.c-home__social-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-navy);
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.c-home__social-sub {
+  font-size: 13.5px;
+  color: var(--c-text-secondary);
+  margin: 0 0 24px;
+}
+
+.c-home__social-links {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.c-home__social-link {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+
+.c-home__social-link:hover {
+  transform: translateY(-4px) scale(1.08);
+}
+
+.c-home__social-link--instagram {
+  background: linear-gradient(
+    45deg,
+    #f09433 0%,
+    #e6683c 25%,
+    #dc2743 50%,
+    #cc2366 75%,
+    #bc1888 100%
+  );
+}
+
+.c-home__social-link--instagram:hover {
+  box-shadow: 0 12px 28px rgba(220, 39, 67, 0.4);
+}
+
+.c-home__social-link--facebook {
+  background: #1877f2;
+}
+
+.c-home__social-link--facebook:hover {
+  box-shadow: 0 12px 28px rgba(24, 119, 242, 0.4);
+}
+
+.c-home__social-link--whatsapp {
+  background: #25d366;
+}
+
+.c-home__social-link--whatsapp:hover {
+  box-shadow: 0 12px 28px rgba(37, 211, 102, 0.4);
+}
+
+@media (min-width: 640px) {
+  .c-home__social {
+    padding: 48px 24px 16px;
+  }
+
+  .c-home__social-links {
+    gap: 18px;
+  }
+
+  .c-home__social-link {
+    width: 64px;
+    height: 64px;
   }
 }
