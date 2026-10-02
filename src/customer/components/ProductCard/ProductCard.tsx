@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom'
-import { Heart, ShoppingCart, Image as ImageIcon, Star } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ShoppingCart, Image as ImageIcon, Star } from 'lucide-react'
 import type { PublicProduct } from '../../hooks/usePublicProducts'
+import { useCart } from '../../context/CartContext'
 import { formatPrice } from '../../../utils/format'
 import './ProductCard.css'
 
@@ -9,8 +10,41 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const navigate = useNavigate()
+  const { addItem } = useCart()
+
   const hasPriceRange = product.min_price !== product.max_price
   const isPack = product.product_type === 'PACK'
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // If only one variant exists, add it directly
+    const activeVariants = product.variants.filter(
+      (v) => v.is_active && v.stock > 0
+    )
+
+    if (activeVariants.length === 1) {
+      const v = activeVariants[0]
+      const variantDescription =
+        [v.size, v.color].filter(Boolean).join(' / ') || 'Default'
+
+      addItem({
+        variant_id: v.id,
+        product_id: product.id,
+        product_name: product.name,
+        product_slug: product.slug,
+        variant_description: variantDescription,
+        price: v.price,
+        image_url: product.image_url,
+        max_stock: v.stock,
+      })
+    } else {
+      // Multiple variants → navigate to detail to pick one
+      navigate(`/products/${product.slug}`)
+    }
+  }
 
   return (
     <Link to={`/products/${product.slug}`} className="c-product-card">
@@ -23,7 +57,6 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
 
-        {/* Top-right badges */}
         <div className="c-product-card__badges">
           {isPack && (
             <span className="c-product-card__badge c-product-card__badge--pack">
@@ -31,18 +64,6 @@ export function ProductCard({ product }: ProductCardProps) {
             </span>
           )}
         </div>
-
-        {/* Favorite button (visual only for now) */}
-        <button
-          type="button"
-          className="c-product-card__fav"
-          onClick={(e) => {
-            e.preventDefault()
-          }}
-          aria-label="Add to favorites"
-        >
-          <Heart size={16} />
-        </button>
       </div>
 
       <div className="c-product-card__body">
@@ -67,11 +88,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <button
             type="button"
             className="c-product-card__cart-btn"
-            onClick={(e) => {
-              e.preventDefault()
-              // Navigate to product page to pick variant
-              window.location.href = `/products/${product.slug}`
-            }}
+            onClick={handleAddToCart}
             aria-label="Add to cart"
           >
             <ShoppingCart size={14} />
