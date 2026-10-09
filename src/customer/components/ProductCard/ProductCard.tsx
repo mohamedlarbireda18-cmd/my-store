@@ -1,5 +1,6 @@
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Image as ImageIcon, Star } from 'lucide-react'
+import { ShoppingCart, Image as ImageIcon, Star, X } from 'lucide-react'
 import type { PublicProduct } from '../../hooks/usePublicProducts'
 import { useCart } from '../../context/CartContext'
 import { formatPrice } from '../../../utils/format'
@@ -12,39 +13,75 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const navigate = useNavigate()
   const { addItem } = useCart()
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
 
   const hasPriceRange = product.min_price !== product.max_price
   const isPack = product.product_type === 'PACK'
+
+  const activeVariants = product.variants.filter(
+    (v) => v.is_active && v.stock > 0
+  )
+
+  const addVariantToCart = (variantId: string) => {
+    const v = product.variants.find((vv) => vv.id === variantId)
+    if (!v) return
+
+    const variantDescription =
+      [v.size, v.color].filter(Boolean).join(' / ') || 'Default'
+
+    addItem({
+      variant_id: v.id,
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: product.slug,
+      variant_description: variantDescription,
+      price: v.price,
+      image_url: product.image_url,
+      max_stock: v.stock,
+    })
+
+    setPickerOpen(false)
+  }
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    // If only one variant exists, add it directly
-    const activeVariants = product.variants.filter(
-      (v) => v.is_active && v.stock > 0
-    )
+    if (activeVariants.length === 0) {
+      // Out of stock — go to detail for context
+      navigate(`/products/${product.slug}`)
+      return
+    }
 
     if (activeVariants.length === 1) {
-      const v = activeVariants[0]
-      const variantDescription =
-        [v.size, v.color].filter(Boolean).join(' / ') || 'Default'
-
-      addItem({
-        variant_id: v.id,
-        product_id: product.id,
-        product_name: product.name,
-        product_slug: product.slug,
-        variant_description: variantDescription,
-        price: v.price,
-        image_url: product.image_url,
-        max_stock: v.stock,
-      })
+      // Only one variant → add directly
+      addVariantToCart(activeVariants[0].id)
     } else {
-      // Multiple variants → navigate to detail to pick one
-      navigate(`/products/${product.slug}`)
+      // Multiple variants → open picker
+      setPickerOpen(true)
     }
   }
+
+  // Close picker on outside click
+  useEffect(() => {
+    if (!pickerOpen) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false)
+      }
+    }
+
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 0)
+
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [pickerOpen])
 
   return (
     <Link to={`/products/${product.slug}`} className="c-product-card">
@@ -85,15 +122,69 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
 
-          <button
-            type="button"
-            className="c-product-card__cart-btn"
-            onClick={handleAddToCart}
-            aria-label="Add to cart"
+          <div
+            className="c-product-card__cart-wrap"
+            ref={pickerRef}
           >
-            <ShoppingCart size={14} />
-            <span>Add to cart</span>
-          </button>
+            <button
+              type="button"
+              className="c-product-card__cart-btn"
+              onClick={handleAddToCart}
+              aria-label="Add to cart"
+            >
+              <ShoppingCart size={14} />
+              <span>Add to cart</span>
+            </button>
+
+            {pickerOpen && (
+              <div className="c-product-card__variant-picker">
+                <div className="c-product-card__variant-picker-header">
+                  <span>Choose variant</span>
+                  <button
+                    type="button"
+                    className="c-product-card__variant-picker-close"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setPickerOpen(false)
+                    }}
+                    aria-label="Close"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <ul className="c-product-card__variant-list">
+                  {activeVariants.map((v) => {
+                    const label =
+                      [v.size, v.color].filter(Boolean).join(' / ') ||
+                      'Default'
+
+                    return (
+                      <li key={v.id}>
+                        <button
+                          type="button"
+                          className="c-product-card__variant-option"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            addVariantToCart(v.id)
+                          }}
+                        >
+                          <span className="c-product-card__variant-label">
+                            {label}
+                          </span>
+                          <span className="c-product-card__variant-price">
+                            {formatPrice(v.price)}
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Link>

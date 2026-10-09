@@ -20,6 +20,9 @@ import { Home } from './customer/pages/Home/Home'
 import { Products as PublicProducts } from './customer/pages/Products/Products'
 import { Categories as PublicCategories } from './customer/pages/Categories/Categories'
 import { ProductDetail } from './customer/pages/ProductDetail/ProductDetail'
+import { Checkout } from './customer/pages/Checkout/Checkout'
+import { OrderConfirmation } from './customer/pages/OrderConfirmation/OrderConfirmation'
+import { CartPage } from './customer/pages/Cart/CartPage'
 
 import './admin/styles/admin.css'
 
@@ -152,31 +155,13 @@ function App() {
                 <Route element={<CustomerLayout />}>
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<PublicProducts />} />
-                  <Route path="/categories" element={<PublicCategories />} />
                   <Route path="/products/:slug" element={<ProductDetail />} />
-                  <Route
-                    path="/cart"
-                    element={
-                      <div style={{ padding: 60, textAlign: 'center' }}>
-                        Cart coming soon
-                      </div>
-                    }
-                  />
-                  <Route
-                    path="/checkout"
-                    element={
-                      <div style={{ padding: 60, textAlign: 'center' }}>
-                        Checkout coming soon
-                      </div>
-                    }
-                  />
+                  <Route path="/categories" element={<PublicCategories />} />
+                  <Route path="/cart" element={<CartPage />} />
+                  <Route path="/checkout" element={<Checkout />} />
                   <Route
                     path="/order/:orderNumber"
-                    element={
-                      <div style={{ padding: 60, textAlign: 'center' }}>
-                        Order confirmation coming soon
-                      </div>
-                    }
+                    element={<OrderConfirmation />}
                   />
                 </Route>
               </Routes>

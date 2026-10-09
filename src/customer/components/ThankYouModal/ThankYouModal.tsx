@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
-import { CheckCircle2, X } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { CheckCircle2, X, ArrowRight } from 'lucide-react'
 import './ThankYouModal.css'
 
 interface ThankYouModalProps {
@@ -13,14 +13,18 @@ export function ThankYouModal({
   orderNumber,
   onClose,
 }: ThankYouModalProps) {
+  const navigate = useNavigate()
+
   if (!isOpen) return null
+
+  const handleViewOrder = () => {
+    onClose()
+    navigate(`/order/${orderNumber}`)
+  }
 
   return (
     <div className="c-thankyou__backdrop" onClick={onClose}>
-      <div
-        className="c-thankyou__card"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="c-thankyou__card" onClick={(e) => e.stopPropagation()}>
         <button
           className="c-thankyou__close"
           onClick={onClose}
@@ -48,13 +52,23 @@ export function ThankYouModal({
           arrange the delivery.
         </p>
 
-        <Link
-          to="/products"
-          className="c-btn c-btn--primary c-btn--block"
-          onClick={onClose}
-        >
-          Continue shopping
-        </Link>
+        <div className="c-thankyou__actions">
+          <button
+            type="button"
+            className="c-btn c-btn--primary c-btn--block"
+            onClick={handleViewOrder}
+          >
+            View order details
+            <ArrowRight size={16} />
+          </button>
+          <Link
+            to="/products"
+            className="c-btn c-btn--ghost c-btn--block"
+            onClick={onClose}
+          >
+            Continue shopping
+          </Link>
+        </div>
       </div>
     </div>
   )
