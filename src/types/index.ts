@@ -101,6 +101,8 @@ export interface Wilaya {
   code: string
   name: string
   delivery_fee: number
+  delivery_fee_home: number | null
+  delivery_fee_desk: number | null
   is_active: boolean
   created_at: string
 }
@@ -119,6 +121,8 @@ export interface Commune {
 // ============================================
 export type OrderStatus = 'PENDING' | 'ACCEPTED_PENDING' | 'DONE' | 'CANCELLED'
 
+export type DeliveryMode = 'home' | 'desk' | 'university'
+
 export interface Order {
   id: string
   order_number: string
@@ -128,6 +132,8 @@ export interface Order {
   commune_id: string
   address: string
   note: string | null
+  delivery_mode: DeliveryMode
+  university_id: string | null
   subtotal: number
   delivery_fee: number
   total: number
@@ -136,6 +142,12 @@ export interface Order {
   updated_at: string
 }
 
+export interface University {
+  id: string
+  name: string
+  is_active: boolean
+  created_at: string
+}
 export interface OrderItem {
   id: string
   order_id: string

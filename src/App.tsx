@@ -19,6 +19,7 @@ import { CustomerLayout } from './customer/layouts/CustomerLayout'
 import { Home } from './customer/pages/Home/Home'
 import { Products as PublicProducts } from './customer/pages/Products/Products'
 import { Categories as PublicCategories } from './customer/pages/Categories/Categories'
+import { ProductDetail } from './customer/pages/ProductDetail/ProductDetail'
 
 import './admin/styles/admin.css'
 
@@ -152,14 +153,7 @@ function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/products" element={<PublicProducts />} />
                   <Route path="/categories" element={<PublicCategories />} />
-                  <Route
-                    path="/products/:slug"
-                    element={
-                      <div style={{ padding: 60, textAlign: 'center' }}>
-                        Product detail coming soon
-                      </div>
-                    }
-                  />
+                  <Route path="/products/:slug" element={<ProductDetail />} />
                   <Route
                     path="/cart"
                     element={

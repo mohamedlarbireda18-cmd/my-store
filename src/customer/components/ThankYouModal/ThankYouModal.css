@@ -1,0 +1,135 @@
+.c-thankyou__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: cThankYouFadeIn 200ms ease;
+}
+
+@keyframes cThankYouFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.c-thankyou__card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  border-radius: 20px;
+  padding: 40px 28px 28px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  animation: cThankYouIn 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cThankYouIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.c-thankyou__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--c-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--c-transition);
+}
+
+.c-thankyou__close:hover {
+  background: var(--c-bg);
+  color: var(--c-text);
+}
+
+.c-thankyou__icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: var(--c-primary);
+  animation: cThankYouPop 400ms 200ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes cThankYouPop {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.c-thankyou__title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--c-navy);
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+
+.c-thankyou__desc {
+  font-size: 14px;
+  color: var(--c-text-secondary);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.c-thankyou__order-number {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--c-primary-light);
+  border: 1px solid rgba(0, 178, 116, 0.2);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.c-thankyou__order-number-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.c-thankyou__order-number-value {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-navy);
+}
+
+.c-thankyou__note {
+  font-size: 13px;
+  color: var(--c-text-secondary);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+@media (max-width: 480px) {
+  .c-thankyou__card {
+    padding: 32px 20px 24px;
+  }
+
+  .c-thankyou__title {
+    font-size: 19px;
+  }
+}
