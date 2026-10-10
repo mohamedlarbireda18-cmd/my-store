@@ -21,7 +21,6 @@ import { Products as PublicProducts } from './customer/pages/Products/Products'
 import { Categories as PublicCategories } from './customer/pages/Categories/Categories'
 import { ProductDetail } from './customer/pages/ProductDetail/ProductDetail'
 import { Checkout } from './customer/pages/Checkout/Checkout'
-import { OrderConfirmation } from './customer/pages/OrderConfirmation/OrderConfirmation'
 import { CartPage } from './customer/pages/Cart/CartPage'
 
 import './admin/styles/admin.css'
@@ -159,10 +158,6 @@ function App() {
                   <Route path="/categories" element={<PublicCategories />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<Checkout />} />
-                  <Route
-                    path="/order/:orderNumber"
-                    element={<OrderConfirmation />}
-                  />
                 </Route>
               </Routes>
 
