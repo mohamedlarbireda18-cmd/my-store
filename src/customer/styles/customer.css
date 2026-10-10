@@ -51,6 +51,9 @@
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;   /* ← ADD THIS LINE */
 }
 
 .customer-app * {
