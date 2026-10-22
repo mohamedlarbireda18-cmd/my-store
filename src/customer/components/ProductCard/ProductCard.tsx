@@ -1,14 +1,8 @@
 import { useState, useRef, useEffect, useId } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  ShoppingCart,
-  Image as ImageIcon,
-  Heart,
-  X,
-} from 'lucide-react'
+import { ShoppingCart, Image as ImageIcon, X } from 'lucide-react'
 import type { PublicProduct } from '../../hooks/usePublicProducts'
 import { useCart } from '../../context/CartContext'
-import { useFavorites } from '../../context/FavoritesContext'
 import { useLanguage } from '../../../i18n/LanguageContext'
 import { formatPrice } from '../../../utils/format'
 import './ProductCard.css'
@@ -20,7 +14,6 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const navigate = useNavigate()
   const { addItem } = useCart()
-  const { isFavorite, toggleFavorite } = useFavorites()
   const { t } = useLanguage()
   const [pickerOpen, setPickerOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -30,7 +23,6 @@ export function ProductCard({ product }: ProductCardProps) {
 
   const hasPriceRange = product.min_price !== product.max_price
   const isPack = product.product_type === 'PACK'
-  const isFav = isFavorite(product.id)
   const comparePrice =
     product.compare_price && product.compare_price > product.min_price
       ? product.compare_price
@@ -199,24 +191,6 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
         </Link>
-
-        <button
-          type="button"
-          className={`c-product-card__favorite ${
-            isFav ? 'c-product-card__favorite--active' : ''
-          }`}
-          onClick={() => toggleFavorite(product.id)}
-          aria-label={
-            isFav ? t('common.removeFavorite') : t('common.addFavorite')
-          }
-          aria-pressed={isFav}
-        >
-          <Heart
-            size={17}
-            fill={isFav ? 'currentColor' : 'none'}
-            aria-hidden="true"
-          />
-        </button>
       </div>
 
       <div className="c-product-card__body">
