@@ -1,6 +1,7 @@
 import { Package } from 'lucide-react'
 import type { PublicProduct } from '../../hooks/usePublicProducts'
 import { ProductCard } from '../ProductCard/ProductCard'
+import { useLanguage } from '../../../i18n/LanguageContext'
 import './ProductGrid.css'
 
 interface ProductGridProps {
@@ -14,10 +15,14 @@ interface ProductGridProps {
 export function ProductGrid({
   products,
   isLoading,
-  emptyTitle = 'No products found',
-  emptyMessage = 'Check back soon for new products.',
+  emptyTitle,
+  emptyMessage,
   skeletonCount = 8,
 }: ProductGridProps) {
+  const { t } = useLanguage()
+  const title = emptyTitle ?? t('products.emptyTitle')
+  const message = emptyMessage ?? t('products.emptyMessage')
+
   if (isLoading) {
     return (
       <div className="c-product-grid">
@@ -39,8 +44,8 @@ export function ProductGrid({
         <div className="c-product-grid__empty-icon">
           <Package size={28} />
         </div>
-        <h3 className="c-product-grid__empty-title">{emptyTitle}</h3>
-        <p className="c-product-grid__empty-desc">{emptyMessage}</p>
+        <h3 className="c-product-grid__empty-title">{title}</h3>
+        <p className="c-product-grid__empty-desc">{message}</p>
       </div>
     )
   }

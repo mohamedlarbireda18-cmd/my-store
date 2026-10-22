@@ -1,522 +1,209 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-
 import { serve } from 'std/http/server.ts'
 import { createClient } from '@supabase/supabase-js'
+import {
+  getBodyByteLimit,
+  isAllowedOrigin,
+  OrderValidationError,
+  parseAllowedOrigins,
+  validateOrderPayload,
+  type NormalizedOrder,
+} from './validation.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
+const allowedOrigins = parseAllowedOrigins([
+  Deno.env.get('ALLOWED_ORIGINS'),
+  Deno.env.get('SITE_URL'),
+])
+
+const userErrors: Record<
+  string,
+  { status: number; message: string }
+> = {
+  INVALID_ORDER: { status: 400, message: 'Invalid order details' },
+  INVALID_PHONE: { status: 400, message: 'Invalid phone number format' },
+  INVALID_ITEMS: { status: 400, message: 'Invalid order items' },
+  INVALID_QUANTITY: { status: 400, message: 'Invalid quantity' },
+  PRODUCT_UNAVAILABLE: {
+    status: 409,
+    message: 'One or more products are unavailable',
+  },
+  INSUFFICIENT_STOCK: {
+    status: 409,
+    message: 'One or more items are out of stock',
+  },
+  PACK_UNAVAILABLE: {
+    status: 409,
+    message: 'One or more products are unavailable',
+  },
+  INVALID_WILAYA: { status: 400, message: 'Invalid delivery details' },
+  INVALID_COMMUNE: { status: 400, message: 'Invalid delivery details' },
+  INVALID_UNIVERSITY: { status: 400, message: 'Invalid delivery details' },
+  DELIVERY_UNAVAILABLE: {
+    status: 400,
+    message: 'Delivery option unavailable',
+  },
+  STORE_CLOSED: { status: 503, message: 'The store is currently closed' },
 }
 
-interface OrderItem {
-  product_id: string
-  variant_id: string
-  quantity: number
-}
+function baseHeaders(origin: string | null): Headers {
+  const headers = new Headers({
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    Vary: 'Origin',
+  })
 
-interface OrderRequest {
-  customer_name: string
-  customer_phone: string
-  wilaya_id: string
-  commune_id: string
-  address: string
-  note?: string
-  delivery_mode: 'home' | 'desk' | 'university'
-  university_id?: string
-  items: OrderItem[]
-}
-
-interface VariantWithProduct {
-  id: string
-  price: number
-  stock: number
-  is_active: boolean
-  size: string | null
-  color: string | null
-  product: {
-    id: string
-    name: string
-    is_active: boolean
+  if (origin && allowedOrigins.has(origin)) {
+    headers.set('Access-Control-Allow-Origin', origin)
+    headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    headers.set('Access-Control-Allow-Headers', 'authorization, apikey, content-type')
+    headers.set('Access-Control-Max-Age', '600')
   }
+
+  return headers
+}
+
+function jsonResponse(
+  body: unknown,
+  status: number,
+  origin: string | null
+): Response {
+  const headers = baseHeaders(origin)
+  headers.set('Content-Type', 'application/json; charset=utf-8')
+  return new Response(JSON.stringify(body), { status, headers })
+}
+
+function getClientIp(req: Request): string {
+  const candidate =
+    req.headers.get('cf-connecting-ip') ??
+    req.headers.get('x-real-ip') ??
+    req.headers.get('x-forwarded-for')?.split(',')[0] ??
+    'unknown'
+
+  return candidate.trim().slice(0, 100)
+}
+
+function getSafeRpcError(message: string | undefined): {
+  status: number
+  message: string
+} {
+  if (message) {
+    for (const [code, error] of Object.entries(userErrors)) {
+      if (message.includes(code)) return error
+    }
+  }
+
+  return { status: 500, message: 'Unable to create order' }
 }
 
 serve(async (req: Request) => {
-  // Handle CORS preflight
+  const origin = req.headers.get('origin')
+
+  if (!isAllowedOrigin(origin, allowedOrigins)) {
+    return new Response('Forbidden', {
+      status: 403,
+      headers: baseHeaders(origin),
+    })
+  }
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { status: 204, headers: baseHeaders(origin) })
   }
 
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'Method not allowed' }, 405, origin)
+  }
+
+  const contentLength = Number(req.headers.get('content-length') ?? 0)
+  if (Number.isFinite(contentLength) && contentLength > getBodyByteLimit()) {
+    return jsonResponse({ error: 'Request too large' }, 413, origin)
+  }
+
+  const contentType = req.headers.get('content-type') ?? ''
+  if (!contentType.toLowerCase().includes('application/json')) {
+    return jsonResponse({ error: 'Unsupported content type' }, 415, origin)
+  }
+
+  let payload: unknown
   try {
-    // Create Supabase client with service role key
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          persistSession: false,
-        },
-      }
-    )
-
-    // Parse request body
-    const body: OrderRequest = await req.json()
-
-    // ============================================
-    // DEBUG LOGS
-    // ============================================
-    console.log('[create-order] Received body:', JSON.stringify(body))
-    console.log('[create-order] wilaya_id:', body.wilaya_id)
-    console.log('[create-order] commune_id:', body.commune_id)
-    console.log('[create-order] delivery_mode:', body.delivery_mode)
-    console.log('[create-order] university_id:', body.university_id)
-    console.log('[create-order] items count:', body.items?.length)
-
-    // ============================================
-    // VALIDATE REQUIRED FIELDS
-    // ============================================
-    if (
-      !body.customer_name ||
-      !body.customer_phone ||
-      !body.wilaya_id ||
-      !body.commune_id ||
-      !body.address
-    ) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
+    const rawBody = await req.text()
+    if (new TextEncoder().encode(rawBody).byteLength > getBodyByteLimit()) {
+      return jsonResponse({ error: 'Request too large' }, 413, origin)
     }
+    payload = JSON.parse(rawBody)
+  } catch {
+    return jsonResponse({ error: 'Invalid request body' }, 400, origin)
+  }
 
-    if (!body.items || body.items.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'No items in order' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
-    }
-
-    // Validate phone number format (Algerian phone numbers)
-    const phoneRegex = /^(0)(5|6|7)[0-9]{8}$/
-    if (!phoneRegex.test(body.customer_phone)) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid phone number format' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
-    }
-
-    // Validate delivery mode
-    if (
-      body.delivery_mode !== 'home' &&
-      body.delivery_mode !== 'desk' &&
-      body.delivery_mode !== 'university'
-    ) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid delivery mode' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
-    }
-
-    // ============================================
-    // FETCH WILAYA (with verbose debug)
-    // ============================================
-    const { data: wilaya, error: wilayaError } = await supabaseClient
-      .from('wilayas')
-      .select('delivery_fee_home, delivery_fee_desk, is_active')
-      .eq('id', body.wilaya_id)
-      .single()
-
-    console.log('[create-order] wilaya result:', JSON.stringify(wilaya))
-    console.log('[create-order] wilaya error:', JSON.stringify(wilayaError))
-
-    if (wilayaError) {
-      return new Response(
-        JSON.stringify({
-          error: `Wilaya query error: ${wilayaError.message}`,
-          code: wilayaError.code,
-          details: wilayaError.details,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
-    }
-
-    if (!wilaya) {
-      return new Response(
-        JSON.stringify({
-          error: 'Wilaya not found',
-          received_id: body.wilaya_id,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
-    }
-
-    if (!wilaya.is_active) {
-      return new Response(
-        JSON.stringify({
-          error: 'Wilaya is inactive',
-          received_id: body.wilaya_id,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
-    }
-
-    // ============================================
-    // VALIDATE COMMUNE
-    // ============================================
-    const { data: commune, error: communeError } = await supabaseClient
-      .from('communes')
-      .select('id, is_active')
-      .eq('id', body.commune_id)
-      .eq('wilaya_id', body.wilaya_id)
-      .single()
-
-    console.log('[create-order] commune result:', JSON.stringify(commune))
-    console.log('[create-order] commune error:', JSON.stringify(communeError))
-
-    if (communeError || !commune || !commune.is_active) {
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid or inactive commune for selected wilaya',
-          details: communeError?.message,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      )
-    }
-
-    // ============================================
-    // COMPUTE DELIVERY FEE
-    // ============================================
-    let deliveryFee = 0
-
-    if (body.delivery_mode === 'home') {
-      deliveryFee = Number(wilaya.delivery_fee_home ?? 0)
-    } else if (body.delivery_mode === 'desk') {
-      deliveryFee = Number(wilaya.delivery_fee_desk ?? 0)
-      if (!deliveryFee || deliveryFee <= 0) {
-        return new Response(
-          JSON.stringify({
-            error: 'Stop desk delivery not available for this wilaya',
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        )
-      }
-    } else if (body.delivery_mode === 'university') {
-      if (!body.university_id) {
-        return new Response(
-          JSON.stringify({
-            error: 'University is required for university delivery',
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        )
-      }
-
-      const { data: university, error: uniError } = await supabaseClient
-        .from('universities')
-        .select('id, is_active')
-        .eq('id', body.university_id)
-        .single()
-
-      console.log('[create-order] university:', JSON.stringify(university))
-      console.log('[create-order] university error:', JSON.stringify(uniError))
-
-      if (uniError || !university || !university.is_active) {
-        return new Response(
-          JSON.stringify({
-            error: 'Invalid university',
-            details: uniError?.message,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        )
-      }
-
-      deliveryFee = 0
-    }
-
-    // ============================================
-    // VALIDATE PRODUCTS AND CALCULATE SUBTOTAL
-    // ============================================
-    let subtotal = 0
-    const orderItems: Array<{
-      product_id: string
-      variant_id: string
-      product_name: string
-      variant_description: string
-      price: number
-      quantity: number
-    }> = []
-
-    for (const item of body.items) {
-      const { data: variant, error: variantError } = await supabaseClient
-        .from('product_variants')
-        .select(
-          `
-          id,
-          price,
-          stock,
-          is_active,
-          size,
-          color,
-          product:products!inner(
-            id,
-            name,
-            is_active
-          )
-        `
-        )
-        .eq('id', item.variant_id)
-        .single()
-
-      if (variantError || !variant) {
-        return new Response(
-          JSON.stringify({
-            error: `Variant not found: ${item.variant_id}`,
-            details: variantError?.message,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        )
-      }
-
-      const variantData = variant as unknown as VariantWithProduct
-
-      if (!variantData.is_active || !variantData.product.is_active) {
-        return new Response(
-          JSON.stringify({
-            error: `Product is not available: ${variantData.product.name}`,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        )
-      }
-
-      if (variantData.stock < item.quantity) {
-        return new Response(
-          JSON.stringify({
-            error: `Insufficient stock for ${variantData.product.name}. Available: ${variantData.stock}`,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        )
-      }
-
-      if (item.quantity <= 0 || item.quantity > 100) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid quantity' }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          }
-        )
-      }
-
-      const itemTotal = variantData.price * item.quantity
-      subtotal += itemTotal
-
-      orderItems.push({
-        product_id: variantData.product.id,
-        variant_id: variantData.id,
-        product_name: variantData.product.name,
-        variant_description: `${variantData.size || ''} ${
-          variantData.color || ''
-        }`.trim(),
-        price: variantData.price,
-        quantity: item.quantity,
-      })
-    }
-
-    // ============================================
-    // TOTALS
-    // ============================================
-    const total = subtotal + deliveryFee
-
-    // Generate order number
-    const orderNumber = `ORD-${Date.now()}-${Math.floor(
-      Math.random() * 1000
-    )}`
-
-    console.log('[create-order] subtotal:', subtotal)
-    console.log('[create-order] deliveryFee:', deliveryFee)
-    console.log('[create-order] total:', total)
-    console.log('[create-order] orderNumber:', orderNumber)
-
-    // ============================================
-    // CREATE ORDER
-    // ============================================
-    const { data: order, error: orderError } = await supabaseClient
-      .from('orders')
-      .insert({
-        order_number: orderNumber,
-        customer_name: body.customer_name,
-        customer_phone: body.customer_phone,
-        wilaya_id: body.wilaya_id,
-        commune_id: body.commune_id,
-        address: body.address,
-        note: body.note || null,
-        delivery_mode: body.delivery_mode,
-        university_id:
-          body.delivery_mode === 'university' ? body.university_id : null,
-        subtotal,
-        delivery_fee: deliveryFee,
-        total,
-        status: 'PENDING',
-      })
-      .select()
-      .single()
-
-    if (orderError) {
-      console.log('[create-order] order insert error:', JSON.stringify(orderError))
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to create order',
-          details: orderError.message,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      )
-    }
-
-    // ============================================
-    // INSERT ORDER ITEMS
-    // ============================================
-    const orderItemsWithOrderId = orderItems.map((item) => ({
-      ...item,
-      order_id: order.id,
-    }))
-
-    const { error: itemsError } = await supabaseClient
-      .from('order_items')
-      .insert(orderItemsWithOrderId)
-
-    if (itemsError) {
-      console.log(
-        '[create-order] items insert error:',
-        JSON.stringify(itemsError)
-      )
-      // Rollback: delete the order if items failed to insert
-      await supabaseClient.from('orders').delete().eq('id', order.id)
-
-      return new Response(
-        JSON.stringify({
-          error: 'Failed to create order items',
-          details: itemsError.message,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        }
-      )
-    }
-
-    // ============================================
-    // DECREMENT STOCK (unwrapping packs)
-    // ============================================
-    for (const item of body.items) {
-      const { data: components, error: componentsError } = await supabaseClient
-        .rpc('get_order_components', {
-          p_variant_id: item.variant_id,
-          p_quantity: item.quantity,
-        })
-
-      if (componentsError || !components) {
-        console.error(
-          '[create-order] Failed to resolve order components:',
-          componentsError
-        )
-        continue
-      }
-
-      for (const component of components as Array<{
-        variant_id: string
-        quantity: number
-      }>) {
-        const { error: stockError } = await supabaseClient.rpc(
-          'decrement_stock',
-          {
-            variant_id: component.variant_id,
-            quantity: component.quantity,
-          }
-        )
-
-        if (stockError) {
-          console.error(
-            `[create-order] Failed to update stock for variant ${component.variant_id}:`,
-            stockError
-          )
-        }
-      }
-    }
-
-    // ============================================
-    // SUCCESS
-    // ============================================
-    return new Response(
-      JSON.stringify({
-        success: true,
-        order: {
-          order_number: order.order_number,
-          total: order.total,
-          status: order.status,
-        },
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      }
-    )
+  let order: NormalizedOrder
+  try {
+    order = validateOrderPayload(payload)
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error'
-    console.error('[create-order] Unexpected error:', errorMessage)
-    return new Response(
-      JSON.stringify({
-        error: 'Internal server error',
-        details: errorMessage,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+    if (error instanceof OrderValidationError) {
+      return jsonResponse({ error: error.message }, 400, origin)
+    }
+    return jsonResponse({ error: 'Invalid request body' }, 400, origin)
+  }
+
+  const serviceRoleKey =
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ??
+    Deno.env.get('SERVICE_ROLE_KEY')
+
+  if (!serviceRoleKey) {
+    console.error('[create-order] Missing service role configuration')
+    return jsonResponse(
+      { error: 'Unable to create order' },
+      500,
+      origin
     )
   }
+
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    serviceRoleKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  )
+
+  const { data: requestAllowed, error: rateLimitError } =
+    await supabaseClient.rpc('check_order_rate_limit', {
+      p_client_ip: getClientIp(req),
+      p_phone: order.customer_phone,
+    })
+
+  if (rateLimitError) {
+    console.error('[create-order] Rate limit check failed', {
+      code: rateLimitError.code ?? 'unknown',
+    })
+    return jsonResponse({ error: 'Unable to create order' }, 500, origin)
+  }
+
+  if (requestAllowed !== true) {
+    return jsonResponse(
+      { error: 'Too many order attempts. Please try again later.' },
+      429,
+      origin
+    )
+  }
+
+  const { data, error } = await supabaseClient.rpc('create_order_atomic', {
+    p_order: order,
+  })
+
+  if (error) {
+    console.error('[create-order] Order transaction failed', {
+      code: error.code ?? 'unknown',
+    })
+    const safeError = getSafeRpcError(error.message)
+    return jsonResponse({ error: safeError.message }, safeError.status, origin)
+  }
+
+  if (!data?.success) {
+    return jsonResponse({ error: 'Unable to create order' }, 500, origin)
+  }
+
+  return jsonResponse(data, 201, origin)
 })

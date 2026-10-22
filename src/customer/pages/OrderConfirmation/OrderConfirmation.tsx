@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -11,7 +12,13 @@ import {
   Clock,
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
+import { useLanguage } from '../../../i18n/LanguageContext'
 import { formatPrice, formatDateTime } from '../../../utils/format'
+import {
+  forgetRememberedOrderPhone,
+  getRememberedOrderPhone,
+  rememberOrderPhone,
+} from '../../utils/orderAccess'
 import './OrderConfirmation.css'
 
 interface ConfirmationItem {
@@ -37,44 +44,136 @@ interface ConfirmationOrder {
   wilaya: { code: string; name: string } | null
   commune: { name: string } | null
   university: { name: string } | null
-  order_items: ConfirmationItem[]
+  items: ConfirmationItem[]
 }
+
+const PHONE_PATTERN = /^0[567][0-9]{8}$/
 
 export function OrderConfirmation() {
   const { orderNumber } = useParams<{ orderNumber: string }>()
+  const { language, t } = useLanguage()
+  const [verifiedPhone, setVerifiedPhone] = useState(() =>
+    orderNumber ? getRememberedOrderPhone(orderNumber) : ''
+  )
+  const [phoneInput, setPhoneInput] = useState('')
+  const [phoneError, setPhoneError] = useState('')
 
   const { data: order, isLoading, error } = useQuery({
-    queryKey: ['order-confirmation', orderNumber],
+    queryKey: ['order-confirmation', orderNumber, verifiedPhone],
     queryFn: async (): Promise<ConfirmationOrder | null> => {
-      if (!orderNumber) return null
+      if (!orderNumber || !verifiedPhone) return null
 
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          order_number,
-          customer_name,
-          customer_phone,
-          address,
-          note,
-          delivery_mode,
-          delivery_fee,
-          subtotal,
-          total,
-          status,
-          created_at,
-          wilaya:wilayas(code, name),
-          commune:communes(name),
-          university:universities(name),
-          order_items(id, product_name, variant_description, price, quantity)
-        `)
-        .eq('order_number', orderNumber)
-        .single()
+      const { data, error: rpcError } = await supabase.rpc(
+        'get_order_confirmation',
+        {
+          p_order_number: orderNumber,
+          p_phone: verifiedPhone,
+        }
+      )
 
-      if (error) return null
-      return data as unknown as ConfirmationOrder
+      if (rpcError) throw rpcError
+      return (data as ConfirmationOrder | null) ?? null
     },
-    enabled: !!orderNumber,
+    enabled: Boolean(orderNumber && verifiedPhone),
+    retry: false,
   })
+
+  useEffect(() => {
+    if (order && orderNumber) {
+      rememberOrderPhone(orderNumber, verifiedPhone)
+    }
+  }, [order, orderNumber, verifiedPhone])
+
+  const handleVerifyPhone = (event: React.FormEvent) => {
+    event.preventDefault()
+    const normalized = phoneInput.replace(/[\s-]/g, '')
+
+    if (!PHONE_PATTERN.test(normalized)) {
+      setPhoneError(t('form.errors.invalidPhone'))
+      return
+    }
+
+    setPhoneError('')
+    setVerifiedPhone(normalized)
+  }
+
+  const handleTryAnotherPhone = () => {
+    if (orderNumber) forgetRememberedOrderPhone(orderNumber)
+    setPhoneInput('')
+    setPhoneError('')
+    setVerifiedPhone('')
+  }
+
+  if (!orderNumber) {
+    return (
+      <div className="c-order-confirm">
+        <div className="c-container">
+          <div className="c-order-confirm__not-found">
+            <Package size={48} />
+            <h1>{t('confirmation.notFoundTitle')}</h1>
+            <Link to="/products" className="c-btn c-btn--primary">
+              {t('confirmation.continueShopping')}
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!verifiedPhone) {
+    return (
+      <div className="c-order-confirm">
+        <div className="c-container">
+          <div className="c-order-confirm__verify">
+            <div className="c-order-confirm__verify-icon">
+              <Phone size={32} />
+            </div>
+            <h1>{t('confirmation.verifyTitle')}</h1>
+            <p>{t('confirmation.verifyDesc')}</p>
+            <div className="c-order-confirm__verify-order">
+              {t('confirmation.orderNumber')}:{' '}
+              <strong>{orderNumber}</strong>
+            </div>
+            <form
+              className="c-order-confirm__verify-form"
+              onSubmit={handleVerifyPhone}
+            >
+              <label htmlFor="confirmation-phone">{t('form.phone')}</label>
+              <input
+                id="confirmation-phone"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder={t('form.phonePlaceholder')}
+                value={phoneInput}
+                onChange={(event) => setPhoneInput(event.target.value)}
+                maxLength={20}
+                aria-invalid={Boolean(phoneError)}
+                aria-describedby={
+                  phoneError ? 'confirmation-phone-error' : undefined
+                }
+              />
+              {phoneError && (
+                <p id="confirmation-phone-error" role="alert">
+                  {phoneError}
+                </p>
+              )}
+              <button
+                type="submit"
+                className="c-btn c-btn--primary c-btn--lg c-btn--block"
+              >
+                {t('confirmation.verifyButton')}
+              </button>
+            </form>
+            <Link to="/products" className="c-order-confirm__verify-link">
+              {t('confirmation.continueShopping')}
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (
@@ -92,14 +191,24 @@ export function OrderConfirmation() {
         <div className="c-container">
           <div className="c-order-confirm__not-found">
             <Package size={48} />
-            <h2>Order not found</h2>
+            <h1>{t('confirmation.notFoundTitle')}</h1>
             <p>
-              We couldn't find an order with the number{' '}
-              <strong>{orderNumber}</strong>.
+              {t('confirmation.notFoundDesc', {
+                orderNumber: orderNumber ?? '',
+              })}
             </p>
-            <Link to="/products" className="c-btn c-btn--primary">
-              Continue shopping
-            </Link>
+            <div className="c-order-confirm__not-found-actions">
+              <button
+                type="button"
+                className="c-btn c-btn--secondary"
+                onClick={handleTryAnotherPhone}
+              >
+                {t('confirmation.tryAnotherPhone')}
+              </button>
+              <Link to="/products" className="c-btn c-btn--primary">
+                {t('confirmation.continueShopping')}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -108,10 +217,10 @@ export function OrderConfirmation() {
 
   const deliveryLabel =
     order.delivery_mode === 'home'
-      ? 'Home delivery'
+      ? t('confirmation.deliveryHome')
       : order.delivery_mode === 'desk'
-      ? 'Stop desk'
-      : 'University delivery'
+      ? t('confirmation.deliveryDesk')
+      : t('confirmation.deliveryUniversity')
 
   const DeliveryIcon =
     order.delivery_mode === 'home'
@@ -129,15 +238,15 @@ export function OrderConfirmation() {
             <CheckCircle2 size={56} />
           </div>
           <h1 className="c-order-confirm__hero-title">
-            Thank you for your order!
+            {t('confirmation.thankyouTitle')}
           </h1>
           <p className="c-order-confirm__hero-desc">
-            Your order has been received successfully.
+            {t('confirmation.thankyouDesc')}
           </p>
 
           <div className="c-order-confirm__order-number">
             <span className="c-order-confirm__order-number-label">
-              Order number
+              {t('confirmation.orderNumber')}
             </span>
             <span className="c-order-confirm__order-number-value">
               {order.order_number}
@@ -145,8 +254,7 @@ export function OrderConfirmation() {
           </div>
 
           <p className="c-order-confirm__hero-note">
-            We will contact you as soon as possible to confirm your order and
-            arrange the delivery.
+            {t('confirmation.note')}
           </p>
         </div>
 
@@ -155,10 +263,12 @@ export function OrderConfirmation() {
           {/* Items card */}
           <div className="c-order-confirm__card">
             <h2 className="c-order-confirm__card-title">
-              Order items ({order.order_items.length})
+              {t('confirmation.items', {
+                count: order.items.length,
+              })}
             </h2>
             <ul className="c-order-confirm__items">
-              {order.order_items.map((item) => (
+              {order.items.map((item) => (
                 <li key={item.id} className="c-order-confirm__item">
                   <div className="c-order-confirm__item-info">
                     <div className="c-order-confirm__item-name">
@@ -182,19 +292,19 @@ export function OrderConfirmation() {
 
             <div className="c-order-confirm__totals">
               <div className="c-order-confirm__total-row">
-                <span>Subtotal</span>
+                <span>{t('confirmation.subtotal')}</span>
                 <span>{formatPrice(order.subtotal)}</span>
               </div>
               <div className="c-order-confirm__total-row">
-                <span>Delivery fee</span>
+                <span>{t('confirmation.deliveryFee')}</span>
                 <span>
                   {order.delivery_fee === 0
-                    ? 'Free'
+                    ? t('confirmation.free')
                     : formatPrice(order.delivery_fee)}
                 </span>
               </div>
               <div className="c-order-confirm__total-row c-order-confirm__total-row--grand">
-                <span>Total</span>
+                <span>{t('confirmation.total')}</span>
                 <span>{formatPrice(order.total)}</span>
               </div>
             </div>
@@ -215,7 +325,7 @@ export function OrderConfirmation() {
                 </div>
                 <div>
                   <div className="c-order-confirm__detail-label">
-                    Contact
+                    {t('confirmation.contact')}
                   </div>
                   <div className="c-order-confirm__detail-value">
                     {order.customer_name}
@@ -235,7 +345,7 @@ export function OrderConfirmation() {
                   </div>
                   <div>
                     <div className="c-order-confirm__detail-label">
-                      University
+                      {t('confirmation.university')}
                     </div>
                     <div className="c-order-confirm__detail-value">
                       {order.university.name}
@@ -249,7 +359,7 @@ export function OrderConfirmation() {
                   </div>
                   <div>
                     <div className="c-order-confirm__detail-label">
-                      Delivery address
+                      {t('confirmation.deliveryAddress')}
                     </div>
                     <div className="c-order-confirm__detail-value">
                       {order.wilaya && order.commune && (
@@ -273,7 +383,9 @@ export function OrderConfirmation() {
                     <Package size={14} />
                   </div>
                   <div>
-                    <div className="c-order-confirm__detail-label">Note</div>
+                    <div className="c-order-confirm__detail-label">
+                      {t('confirmation.noteLabel')}
+                    </div>
                     <div className="c-order-confirm__detail-value">
                       {order.note}
                     </div>
@@ -288,10 +400,10 @@ export function OrderConfirmation() {
                 </div>
                 <div>
                   <div className="c-order-confirm__detail-label">
-                    Placed on
+                    {t('confirmation.placedOn')}
                   </div>
                   <div className="c-order-confirm__detail-value">
-                    {formatDateTime(order.created_at)}
+                    {formatDateTime(order.created_at, language)}
                   </div>
                 </div>
               </div>
@@ -302,7 +414,7 @@ export function OrderConfirmation() {
         {/* Actions */}
         <div className="c-order-confirm__actions">
           <Link to="/products" className="c-btn c-btn--primary c-btn--lg">
-            Continue shopping
+            {t('confirmation.continueShopping')}
           </Link>
         </div>
       </div>

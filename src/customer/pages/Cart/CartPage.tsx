@@ -1,23 +1,26 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, ShoppingBag, Trash2 } from 'lucide-react'
 import { useCart } from '../../context/CartContext'
+import { QuantityControl } from '../../components/QuantityControl/QuantityControl'
+import { useLanguage } from '../../../i18n/LanguageContext'
 import { formatPrice } from '../../../utils/format'
 import './CartPage.css'
 
 export function CartPage() {
-  const { items, subtotal, itemCount, removeItem } = useCart()
+  const { t } = useLanguage()
+  const { items, subtotal, itemCount, updateQuantity, removeItem } = useCart()
 
   return (
     <div className="c-cart-page">
       <div className="c-container">
         <div className="c-cart-page__header">
           <h1 className="c-page-title">
-            Your Cart {itemCount > 0 && `(${itemCount})`}
+            {t('cart.pageTitle')} {itemCount > 0 && `(${itemCount})`}
           </h1>
           <p className="c-page-subtitle">
             {items.length === 0
-              ? 'Your cart is currently empty.'
-              : 'Review your items and proceed to checkout.'}
+              ? t('cart.pageEmptySubtitle')
+              : t('cart.pageReviewSubtitle')}
           </p>
         </div>
 
@@ -26,12 +29,12 @@ export function CartPage() {
             <div className="c-cart-page__empty-icon">
               <ShoppingBag size={36} />
             </div>
-            <h3 className="c-cart-page__empty-title">Your cart is empty</h3>
-            <p className="c-cart-page__empty-desc">
-              Start shopping to add items to your cart.
-            </p>
+            <h3 className="c-cart-page__empty-title">
+              {t('cart.emptyTitle')}
+            </h3>
+            <p className="c-cart-page__empty-desc">{t('cart.emptyDesc')}</p>
             <Link to="/products" className="c-btn c-btn--primary c-btn--lg">
-              Browse products
+              {t('common.browseProducts')}
               <ArrowRight size={18} />
             </Link>
           </div>
@@ -44,6 +47,7 @@ export function CartPage() {
                   <Link
                     to={`/products/${item.product_slug}`}
                     className="c-cart-page__item-image"
+                    aria-label={item.product_name}
                   >
                     {item.image_url ? (
                       <img src={item.image_url} alt={item.product_name} />
@@ -65,19 +69,33 @@ export function CartPage() {
                       </div>
                     )}
                     <div className="c-cart-page__item-meta">
-                      {formatPrice(item.price)} × {item.quantity}
+                      {formatPrice(item.price)}
+                    </div>
+                    <div className="c-cart-page__item-quantity">
+                      <QuantityControl
+                        value={item.quantity}
+                        max={item.max_stock}
+                        onChange={(quantity) =>
+                          updateQuantity(item.variant_id, quantity)
+                        }
+                        label={item.product_name}
+                        compact
+                      />
                     </div>
                   </div>
 
                   <div className="c-cart-page__item-right">
-                    <div className="c-cart-page__item-total">
+                    <div
+                      className="c-cart-page__item-total"
+                      aria-label={t('common.total')}
+                    >
                       {formatPrice(item.price * item.quantity)}
                     </div>
                     <button
                       type="button"
                       className="c-cart-page__item-remove"
                       onClick={() => removeItem(item.variant_id)}
-                      aria-label="Remove item"
+                      aria-label={t('common.removeItem')}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -88,21 +106,23 @@ export function CartPage() {
 
             {/* Summary */}
             <aside className="c-cart-page__summary">
-              <h2 className="c-cart-page__summary-title">Summary</h2>
+              <h2 className="c-cart-page__summary-title">
+                {t('cart.summary')}
+              </h2>
 
               <div className="c-cart-page__summary-row">
                 <span>
-                  Subtotal ({itemCount} item{itemCount !== 1 ? 's' : ''})
+                  {t('cart.subtotalItems', { count: itemCount })}
                 </span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
 
               <div className="c-cart-page__summary-row c-cart-page__summary-row--muted">
-                <span>Delivery fee calculated at checkout.</span>
+                <span>{t('cart.deliveryNote')}</span>
               </div>
 
               <div className="c-cart-page__summary-total">
-                <span>Total</span>
+                <span>{t('common.total')}</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
 
@@ -110,7 +130,7 @@ export function CartPage() {
                 to="/checkout"
                 className="c-btn c-btn--primary c-btn--lg c-btn--block c-cart-page__checkout"
               >
-                Checkout
+                {t('cart.checkout')}
                 <ArrowRight size={18} />
               </Link>
 
@@ -118,7 +138,7 @@ export function CartPage() {
                 to="/products"
                 className="c-btn c-btn--ghost c-btn--block"
               >
-                Continue shopping
+                {t('cart.continueShopping')}
               </Link>
             </aside>
           </div>

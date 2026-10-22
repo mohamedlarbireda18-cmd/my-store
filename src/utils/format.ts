@@ -10,11 +10,16 @@ export function formatPrice(price: number): string {
   }).format(price)
 }
 
+type DateLanguage = 'en' | 'fr'
+
 /**
  * Format a date string
  */
-export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat('fr-DZ', {
+export function formatDate(
+  date: string | Date,
+  language: DateLanguage = 'fr'
+): string {
+  return new Intl.DateTimeFormat(language === 'en' ? 'en-DZ' : 'fr-DZ', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -24,8 +29,11 @@ export function formatDate(date: string | Date): string {
 /**
  * Format a date with time
  */
-export function formatDateTime(date: string | Date): string {
-  return new Intl.DateTimeFormat('fr-DZ', {
+export function formatDateTime(
+  date: string | Date,
+  language: DateLanguage = 'fr'
+): string {
+  return new Intl.DateTimeFormat(language === 'en' ? 'en-DZ' : 'fr-DZ', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

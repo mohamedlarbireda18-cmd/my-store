@@ -1,16 +1,28 @@
 .c-layout__main {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 
 .c-layout__content {
   flex: 1;
-  padding: 24px 0 60px;
+  padding: 26px 0 64px;
+  outline: none;
+}
+
+@media (min-width: 768px) {
+  .c-layout__content {
+    padding-top: 32px;
+  }
 }
 
 @media (min-width: 1024px) {
   .c-layout__main {
     margin-left: var(--c-sidebar-width);
+  }
+
+  .c-layout__content {
+    padding-bottom: 80px;
   }
 }

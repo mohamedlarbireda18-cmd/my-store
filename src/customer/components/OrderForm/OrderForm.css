@@ -173,6 +173,21 @@
   line-height: 1.4;
 }
 
+/* Quantity */
+.c-order-form__quantity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.c-order-form__quantity-label {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--c-text-secondary);
+}
+
 /* Summary */
 .c-order-form__summary {
   display: flex;

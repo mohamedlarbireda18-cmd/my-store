@@ -25,37 +25,75 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     checkSession()
   }, [])
 
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase
+  const loadAdminProfile = async (userId: string) => {
+    const { data, error } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, role')
       .eq('id', userId)
       .single()
 
-    setAdminName(data?.full_name ?? null)
+    if (error || data?.role !== 'admin') return null
+    return data
+  }
+
+  const clearSession = async () => {
+    await supabase.auth
+      .signOut({ scope: 'local' })
+      .catch(() => undefined)
+    setIsAuthenticated(false)
+    setAdminEmail(null)
+    setAdminName(null)
   }
 
   const checkSession = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      setIsAuthenticated(!!session)
-      setAdminEmail(session?.user?.email ?? null)
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser()
 
-      if (session?.user?.id) {
-        await loadProfile(session.user.id)
+      if (error || !user) {
+        setIsAuthenticated(false)
+        setAdminEmail(null)
+        setAdminName(null)
+        return
       }
+
+      const profile = await loadAdminProfile(user.id)
+      if (!profile) {
+        await clearSession()
+        return
+      }
+
+      setIsAuthenticated(true)
+      setAdminEmail(user.email ?? null)
+      setAdminName(profile.full_name ?? null)
     } catch {
-      setIsAuthenticated(false)
-      setAdminEmail(null)
-      setAdminName(null)
+      await clearSession()
     } finally {
       setIsLoading(false)
     }
   }
 
   const refreshProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) await loadProfile(user.id)
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+
+    if (error || !user) {
+      await clearSession()
+      return
+    }
+
+    const profile = await loadAdminProfile(user.id)
+    if (!profile) {
+      await clearSession()
+      return
+    }
+
+    setAdminEmail(user.email ?? null)
+    setAdminName(profile.full_name ?? null)
   }
 
   const login = async (email: string, password: string) => {

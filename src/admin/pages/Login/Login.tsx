@@ -5,6 +5,13 @@ import { useAdminAuth } from '../../auth/AdminAuthContext'
 import toast from 'react-hot-toast'
 import './Login.css'
 
+function safeAdminRedirect(value: unknown): string {
+  if (typeof value !== 'string') return '/admin'
+  if (!value.startsWith('/admin')) return '/admin'
+  if (value.startsWith('//') || value.includes('\\')) return '/admin'
+  return value
+}
+
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,10 +25,10 @@ export function Login() {
     e.preventDefault()
     setLoading(true)
     try {
-      await login(email, password)
+      await login(email.trim(), password)
       toast.success('Welcome back!')
-      const from = (location.state as any)?.from || '/admin'
-      navigate(from, { replace: true })
+      const requestedPath = (location.state as { from?: unknown } | null)?.from
+      navigate(safeAdminRedirect(requestedPath), { replace: true })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -46,6 +53,7 @@ export function Login() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@mystore.com"
               required
+              maxLength={254}
               autoComplete="email"
             />
           </div>
@@ -59,6 +67,7 @@ export function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                maxLength={128}
                 autoComplete="current-password"
               />
               <button

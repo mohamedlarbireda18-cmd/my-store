@@ -43,14 +43,16 @@ body {
   }
 }
 
-/* Touch targets */
-button, 
-a, 
-input, 
-select, 
+/* Form controls inherit the app typography */
+button,
+input,
+select,
 textarea {
-  min-height: 44px;
-  min-width: 44px;
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
 }
 
 /* Safe area for notched phones */
@@ -360,12 +362,8 @@ body {
 }
 
 /* ============================================
-   TOUCH TARGETS
+   FORM CONTROLS
    ============================================ */
-button, a {
-  min-height: 40px;
-}
-
 input, select, textarea {
   font-family: inherit;
 }

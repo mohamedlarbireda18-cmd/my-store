@@ -5,6 +5,16 @@ import toast from 'react-hot-toast'
 
 const ORDERS_KEY = ['orders']
 
+// Strip PostgREST filter metacharacters so search terms cannot inject
+// additional filters into the `.or()` expression.
+function sanitizeSearchTerm(term: string): string {
+  return term
+    .replace(/[,()*%\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100)
+}
+
 // ============================================
 // LIST ORDERS
 // ============================================
@@ -36,10 +46,11 @@ export function useOrders(filters: OrderFilters) {
         query = query.eq('wilaya_id', filters.wilayaId)
       }
 
-      if (filters.search.trim()) {
-        const s = filters.search.trim()
+      const searchTerm = sanitizeSearchTerm(filters.search)
+
+      if (searchTerm) {
         query = query.or(
-          `customer_name.ilike.%${s}%,customer_phone.ilike.%${s}%,order_number.ilike.%${s}%`
+          `customer_name.ilike.%${searchTerm}%,customer_phone.ilike.%${searchTerm}%,order_number.ilike.%${searchTerm}%`
         )
       }
 

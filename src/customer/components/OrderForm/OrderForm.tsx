@@ -4,7 +4,10 @@ import { useWilayas } from '../../../hooks/useWilayas'
 import { useCommunes } from '../../hooks/useCommunes'
 import { useUniversities } from '../../hooks/useUniversities'
 import { useCreateOrder } from '../../hooks/useCreateOrder'
+import { useLanguage } from '../../../i18n/LanguageContext'
 import { formatPrice } from '../../../utils/format'
+import { rememberOrderPhone } from '../../utils/orderAccess'
+import { QuantityControl } from '../QuantityControl/QuantityControl'
 import type { DeliveryMode } from '../../../types'
 import toast from 'react-hot-toast'
 import './OrderForm.css'
@@ -13,6 +16,8 @@ interface OrderFormProps {
   variantId: string
   unitPrice: number
   maxStock: number
+  quantity: number
+  onQuantityChange: (quantity: number) => void
   onSuccess: (orderNumber: string) => void
 }
 
@@ -20,8 +25,11 @@ export function OrderForm({
   variantId,
   unitPrice,
   maxStock,
+  quantity,
+  onQuantityChange,
   onSuccess,
 }: OrderFormProps) {
+  const { t } = useLanguage()
   const { data: wilayas = [] } = useWilayas()
   const { data: universities = [] } = useUniversities()
   const createOrder = useCreateOrder()
@@ -35,11 +43,19 @@ export function OrderForm({
   const [note, setNote] = useState('')
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('home')
   const [universityId, setUniversityId] = useState('')
+  const [idempotencyKey, setIdempotencyKey] = useState(() =>
+    crypto.randomUUID()
+  )
 
   const isUniversity = deliveryMode === 'university'
 
+  const algerWilaya = useMemo(
+    () => wilayas.find((w) => w.code === '16'),
+    [wilayas]
+  )
+
   const { data: communes = [], isLoading: loadingCommunes } = useCommunes(
-    isUniversity ? null : wilayaId || null
+    isUniversity ? algerWilaya?.id ?? null : wilayaId || null
   )
 
   const wilaya = useMemo(
@@ -69,27 +85,31 @@ export function OrderForm({
     }
   }, [wilaya, deliveryMode, deskAvailable])
 
-  const total = unitPrice + deliveryFee
+  const subtotal = unitPrice * quantity
+  const total = subtotal + deliveryFee
 
   const validate = (): string | null => {
-    if (!firstName.trim()) return 'First name is required'
-    if (!lastName.trim()) return 'Last name is required'
-    if (!phone.trim()) return 'Phone number is required'
+    if (!firstName.trim()) return t('form.errors.firstNameRequired')
+    if (!lastName.trim()) return t('form.errors.lastNameRequired')
+    if (!phone.trim()) return t('form.errors.phoneRequired')
 
     const phoneRegex = /^(0)(5|6|7)[0-9]{8}$/
     if (!phoneRegex.test(phone.trim())) {
-      return 'Invalid phone number (e.g. 0550123456)'
+      return t('form.errors.invalidPhone')
     }
 
     if (isUniversity) {
-      if (!universityId) return 'Please select a university'
+      if (!universityId) return t('form.errors.selectUniversity')
     } else {
-      if (!wilayaId) return 'Please select a wilaya'
-      if (!communeId) return 'Please select a commune'
-      if (!address.trim()) return 'Address is required'
+      if (!wilayaId) return t('form.errors.selectWilaya')
+      if (!communeId) return t('form.errors.selectCommune')
+      if (!address.trim()) return t('form.errors.addressRequired')
     }
 
-    if (maxStock < 1) return 'Out of stock'
+    if (maxStock < 1) return t('form.errors.outOfStock')
+    if (quantity > maxStock) {
+      return t('cart.onlyInStock', { count: maxStock })
+    }
     return null
   }
 
@@ -102,49 +122,20 @@ export function OrderForm({
       return
     }
 
-    // For university: default to Algiers (wilaya 16) if not set
     let finalWilayaId = wilayaId
     let finalCommuneId = communeId
     let finalAddress = address.trim()
 
     if (isUniversity) {
-      // Find Algiers by code '16'
-      const alger = wilayas.find((w) => w.code === '16')
-      finalWilayaId = alger?.id ?? wilayaId
-      // Commune can be anything; if empty we let the edge function handle it
-      // by falling back to the first commune of Alger
-      if (!finalCommuneId && alger) {
-        // We need a commune — the edge function requires one.
-        // Pick the first commune of Alger as a stable default.
-        // The customer never sees this — it's just a placeholder.
-        finalCommuneId = '' // will be filled below
-      }
+      finalWilayaId = algerWilaya?.id ?? wilayaId
+      finalCommuneId = communes[0]?.id ?? ''
       const uni = universities.find((u) => u.id === universityId)
-      finalAddress = `University: ${uni?.name ?? 'Unknown'}`
+      finalAddress = `University: ${uni?.name ?? t('common.notAvailable')}`
     }
 
-    // If university mode and no commune set, fetch the first Alger commune
-    if (isUniversity && !finalCommuneId) {
-      const alger = wilayas.find((w) => w.code === '16')
-      if (alger) {
-        try {
-          const { supabase } = await import('../../../lib/supabase')
-          const { data: firstCommune } = await supabase
-            .from('communes')
-            .select('id')
-            .eq('wilaya_id', alger.id)
-            .eq('is_active', true)
-            .order('code', { ascending: true })
-            .limit(1)
-            .maybeSingle()
-
-          if (firstCommune) {
-            finalCommuneId = firstCommune.id
-          }
-        } catch {
-          /* ignore */
-        }
-      }
+    if (!finalWilayaId || !finalCommuneId) {
+      toast.error(t('form.errors.selectCommune'))
+      return
     }
 
     try {
@@ -157,72 +148,97 @@ export function OrderForm({
         note: note.trim() || undefined,
         delivery_mode: deliveryMode,
         university_id: isUniversity ? universityId : undefined,
-        items: [{ variant_id: variantId, quantity: 1 }],
+        idempotency_key: idempotencyKey,
+        items: [{ variant_id: variantId, quantity }],
       })
 
+      rememberOrderPhone(
+        result.order.order_number,
+        result.order.customer_phone || phone.trim()
+      )
+      setIdempotencyKey(crypto.randomUUID())
       onSuccess(result.order.order_number)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to place order')
+      toast.error(
+        err instanceof Error ? err.message : t('form.errors.orderFailed')
+      )
     }
   }
 
   return (
     <form className="c-order-form" onSubmit={handleSubmit}>
-      <h2 className="c-order-form__title">Order now</h2>
-      <p className="c-order-form__subtitle">
-        Fill in your details and we'll contact you to confirm.
-      </p>
+      <h2 className="c-order-form__title">{t('order.title')}</h2>
+      <p className="c-order-form__subtitle">{t('order.subtitle')}</p>
 
       <div className="c-order-form__row">
         <div className="c-order-form__field">
-          <label className="c-order-form__label">
-            First name <span>*</span>
+          <label className="c-order-form__label" htmlFor="order-first-name">
+            {t('form.firstName')} <span aria-hidden="true">*</span>
           </label>
           <input
+            id="order-first-name"
+            name="firstName"
             type="text"
             className="c-order-form__input"
-            placeholder="Mohamed"
+            placeholder={t('form.firstNamePlaceholder')}
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             autoComplete="given-name"
+            aria-required="true"
           />
         </div>
         <div className="c-order-form__field">
-          <label className="c-order-form__label">
-            Last name <span>*</span>
+          <label className="c-order-form__label" htmlFor="order-last-name">
+            {t('form.lastName')} <span aria-hidden="true">*</span>
           </label>
           <input
+            id="order-last-name"
+            name="lastName"
             type="text"
             className="c-order-form__input"
-            placeholder="Benali"
+            placeholder={t('form.lastNamePlaceholder')}
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             autoComplete="family-name"
+            aria-required="true"
           />
         </div>
       </div>
 
       <div className="c-order-form__field">
-        <label className="c-order-form__label">
-          Phone number <span>*</span>
+        <label className="c-order-form__label" htmlFor="order-phone">
+          {t('form.phone')} <span aria-hidden="true">*</span>
         </label>
         <input
+          id="order-phone"
+          name="phone"
           type="tel"
           inputMode="numeric"
           className="c-order-form__input"
-          placeholder="0550123456"
+          placeholder={t('form.phonePlaceholder')}
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\s/g, ''))}
           autoComplete="tel"
+          aria-required="true"
         />
       </div>
 
       {/* Delivery method FIRST — so the rest adapts */}
       <div className="c-order-form__field">
-        <label className="c-order-form__label">Delivery method</label>
-        <div className="c-order-form__delivery c-order-form__delivery--three">
+        <label
+          className="c-order-form__label"
+          id="order-delivery-label"
+        >
+          {t('form.deliveryMethod')}
+        </label>
+        <div
+          className="c-order-form__delivery c-order-form__delivery--three"
+          role="group"
+          aria-labelledby="order-delivery-label"
+        >
           <button
             type="button"
+            aria-pressed={deliveryMode === 'home'}
             className={`c-order-form__delivery-option ${
               deliveryMode === 'home'
                 ? 'c-order-form__delivery-option--active'
@@ -232,19 +248,24 @@ export function OrderForm({
           >
             <Truck size={16} />
             <div>
-              <div className="c-order-form__delivery-title">Home</div>
+              <div className="c-order-form__delivery-title">
+                {t('form.home')}
+              </div>
               {wilaya ? (
                 <div className="c-order-form__delivery-fee">
                   {formatPrice(Number(wilaya.delivery_fee_home ?? 0))}
                 </div>
               ) : (
-                <div className="c-order-form__delivery-fee">Pick wilaya</div>
+                <div className="c-order-form__delivery-fee">
+                  {t('form.pickWilaya')}
+                </div>
               )}
             </div>
           </button>
 
           <button
             type="button"
+            aria-pressed={deliveryMode === 'desk'}
             className={`c-order-form__delivery-option ${
               deliveryMode === 'desk'
                 ? 'c-order-form__delivery-option--active'
@@ -257,21 +278,26 @@ export function OrderForm({
           >
             <Store size={16} />
             <div>
-              <div className="c-order-form__delivery-title">Stop desk</div>
+              <div className="c-order-form__delivery-title">
+                {t('form.stopDesk')}
+              </div>
               {wilaya ? (
                 <div className="c-order-form__delivery-fee">
                   {deskAvailable
                     ? formatPrice(Number(wilaya.delivery_fee_desk ?? 0))
-                    : 'Not available'}
+                    : t('form.notAvailable')}
                 </div>
               ) : (
-                <div className="c-order-form__delivery-fee">Pick wilaya</div>
+                <div className="c-order-form__delivery-fee">
+                  {t('form.pickWilaya')}
+                </div>
               )}
             </div>
           </button>
 
           <button
             type="button"
+            aria-pressed={deliveryMode === 'university'}
             className={`c-order-form__delivery-option ${
               deliveryMode === 'university'
                 ? 'c-order-form__delivery-option--active'
@@ -281,8 +307,10 @@ export function OrderForm({
           >
             <GraduationCap size={16} />
             <div>
-              <div className="c-order-form__delivery-title">University</div>
-              <div className="c-order-form__delivery-fee">Free</div>
+              <div className="c-order-form__delivery-title">
+                {t('form.university')}
+              </div>
+              <div className="c-order-form__delivery-fee">{t('form.free')}</div>
             </div>
           </button>
         </div>
@@ -291,16 +319,20 @@ export function OrderForm({
       {/* UNIVERSITY: only show uni picker */}
       {isUniversity ? (
         <div className="c-order-form__field">
-          <label className="c-order-form__label">
-            <GraduationCap size={13} />
-            Choose your university <span>*</span>
+          <label className="c-order-form__label" htmlFor="order-university">
+            <GraduationCap size={13} aria-hidden="true" />
+            {t('form.chooseUniversity')}{' '}
+            <span aria-hidden="true">*</span>
           </label>
           <select
+            id="order-university"
+            name="university"
             className="c-order-form__select"
             value={universityId}
             onChange={(e) => setUniversityId(e.target.value)}
+            aria-required="true"
           >
-            <option value="">Select university...</option>
+            <option value="">{t('form.selectUniversity')}</option>
             {universities.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name}
@@ -309,7 +341,7 @@ export function OrderForm({
           </select>
           <p className="c-order-form__hint c-order-form__hint--success">
             <GraduationCap size={12} />
-            Free shipping — we'll deliver to the university entrance.
+            {t('form.freeUniversityShipping')}
           </p>
         </div>
       ) : (
@@ -317,15 +349,18 @@ export function OrderForm({
           {/* Wilaya + Commune */}
           <div className="c-order-form__row">
             <div className="c-order-form__field">
-              <label className="c-order-form__label">
-                Wilaya <span>*</span>
+              <label className="c-order-form__label" htmlFor="order-wilaya">
+                {t('form.wilaya')} <span aria-hidden="true">*</span>
               </label>
               <select
+                id="order-wilaya"
+                name="wilaya"
                 className="c-order-form__select"
                 value={wilayaId}
                 onChange={(e) => setWilayaId(e.target.value)}
+                aria-required="true"
               >
-                <option value="">Select wilaya...</option>
+                <option value="">{t('form.selectWilaya')}</option>
                 {wilayas.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.code} — {w.name}
@@ -334,21 +369,24 @@ export function OrderForm({
               </select>
             </div>
             <div className="c-order-form__field">
-              <label className="c-order-form__label">
-                Commune <span>*</span>
+              <label className="c-order-form__label" htmlFor="order-commune">
+                {t('form.commune')} <span aria-hidden="true">*</span>
               </label>
               <select
+                id="order-commune"
+                name="commune"
                 className="c-order-form__select"
                 value={communeId}
                 onChange={(e) => setCommuneId(e.target.value)}
                 disabled={!wilayaId || loadingCommunes}
+                aria-required="true"
               >
                 <option value="">
                   {!wilayaId
-                    ? 'Pick wilaya first'
+                    ? t('form.pickWilayaFirst')
                     : loadingCommunes
-                    ? 'Loading...'
-                    : 'Select commune...'}
+                    ? t('form.loading')
+                    : t('form.selectCommune')}
                 </option>
                 {communes.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -362,56 +400,78 @@ export function OrderForm({
           {wilaya && !deskAvailable && deliveryMode === 'desk' && (
             <p className="c-order-form__hint">
               <AlertCircle size={12} />
-              Stop desk not available in {wilaya.name}
+              {t('form.stopDeskUnavailable', { wilaya: wilaya.name })}
             </p>
           )}
 
           {/* Address */}
           <div className="c-order-form__field">
-            <label className="c-order-form__label">
-              <MapPin size={13} />
-              Address <span>*</span>
+            <label className="c-order-form__label" htmlFor="order-address">
+              <MapPin size={13} aria-hidden="true" />
+              {t('form.address')} <span aria-hidden="true">*</span>
             </label>
             <textarea
+              id="order-address"
+              name="address"
               className="c-order-form__textarea"
               rows={2}
-              placeholder="Street, building, landmark..."
+              placeholder={t('form.addressPlaceholder')}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               autoComplete="street-address"
+              aria-required="true"
             />
           </div>
         </>
       )}
 
       <div className="c-order-form__field">
-        <label className="c-order-form__label">Note (optional)</label>
+        <label className="c-order-form__label" htmlFor="order-note">
+          {t('form.noteOptional')}
+        </label>
         <textarea
+          id="order-note"
+          name="note"
           className="c-order-form__textarea"
           rows={2}
-          placeholder="Any additional details..."
+          placeholder={t('form.notePlaceholder')}
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
       </div>
 
+      <div className="c-order-form__quantity">
+        <span className="c-order-form__quantity-label">
+          {t('common.quantity')}
+        </span>
+        <QuantityControl
+          value={quantity}
+          max={Math.max(1, maxStock)}
+          onChange={onQuantityChange}
+          compact
+        />
+      </div>
+
       <div className="c-order-form__summary">
         <div className="c-order-form__summary-row">
-          <span>Price</span>
-          <span>{formatPrice(unitPrice)}</span>
+          <span>
+            {t('form.price')}
+            {quantity > 1 ? ` × ${quantity}` : ''}
+          </span>
+          <span>{formatPrice(subtotal)}</span>
         </div>
         <div className="c-order-form__summary-row">
-          <span>Delivery fee</span>
+          <span>{t('form.deliveryFee')}</span>
           <span>
             {isUniversity
-              ? 'Free'
+              ? t('form.free')
               : wilaya
               ? formatPrice(deliveryFee)
               : '—'}
           </span>
         </div>
         <div className="c-order-form__summary-row c-order-form__summary-row--total">
-          <span>Total</span>
+          <span>{t('form.total')}</span>
           <span>{formatPrice(total)}</span>
         </div>
       </div>
@@ -422,10 +482,10 @@ export function OrderForm({
         disabled={createOrder.isPending || maxStock < 1}
       >
         {createOrder.isPending
-          ? 'Placing order...'
+          ? t('form.placingOrder')
           : maxStock < 1
-          ? 'Out of stock'
-          : 'Confirm order'}
+          ? t('form.outOfStock')
+          : t('form.confirmOrder')}
       </button>
     </form>
   )

@@ -1,10 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from '../components/Sidebar/Sidebar'
 import { Header } from '../components/Header/Header'
 import './AdminLayout.css'
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    document.documentElement.lang = 'en'
+    document.title = 'My Store - Admin'
+  }, [])
 
   return (
     <div className="admin-app">

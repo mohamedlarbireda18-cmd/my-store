@@ -15,6 +15,7 @@ import { OrderDetail } from './admin/pages/Orders/OrderDetail'
 import { Settings } from './admin/pages/Settings/Settings'
 import { CartProvider } from './customer/context/CartContext'
 import { FavoritesProvider } from './customer/context/FavoritesContext'
+import { LanguageProvider } from './i18n/LanguageContext'
 import { CustomerLayout } from './customer/layouts/CustomerLayout'
 import { Home } from './customer/pages/Home/Home'
 import { Products as PublicProducts } from './customer/pages/Products/Products'
@@ -22,6 +23,8 @@ import { Categories as PublicCategories } from './customer/pages/Categories/Cate
 import { ProductDetail } from './customer/pages/ProductDetail/ProductDetail'
 import { Checkout } from './customer/pages/Checkout/Checkout'
 import { CartPage } from './customer/pages/Cart/CartPage'
+import { OrderConfirmation } from './customer/pages/OrderConfirmation/OrderConfirmation'
+import { Help } from './customer/pages/Help/Help'
 
 import './admin/styles/admin.css'
 
@@ -38,10 +41,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <AdminAuthProvider>
-          <CartProvider>
-            <FavoritesProvider>
-              <Routes>
+        <LanguageProvider>
+          <AdminAuthProvider>
+            <CartProvider>
+              <FavoritesProvider>
+                <Routes>
                 {/* ==============================
                     Admin routes
                 ============================== */}
@@ -156,8 +160,13 @@ function App() {
                   <Route path="/products" element={<PublicProducts />} />
                   <Route path="/products/:slug" element={<ProductDetail />} />
                   <Route path="/categories" element={<PublicCategories />} />
+                  <Route path="/help" element={<Help />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<Checkout />} />
+                  <Route
+                    path="/order-confirmation/:orderNumber"
+                    element={<OrderConfirmation />}
+                  />
                 </Route>
               </Routes>
 
@@ -168,9 +177,10 @@ function App() {
                   style: { background: '#363636', color: '#fff' },
                 }}
               />
-            </FavoritesProvider>
-          </CartProvider>
-        </AdminAuthProvider>
+              </FavoritesProvider>
+            </CartProvider>
+          </AdminAuthProvider>
+        </LanguageProvider>
       </Router>
     </QueryClientProvider>
   )

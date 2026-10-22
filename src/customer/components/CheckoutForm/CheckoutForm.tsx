@@ -13,17 +13,24 @@ import { useCommunes } from '../../hooks/useCommunes'
 import { useUniversities } from '../../hooks/useUniversities'
 import { useCreateOrder } from '../../hooks/useCreateOrder'
 import { useCart } from '../../context/CartContext'
+import { useLanguage } from '../../../i18n/LanguageContext'
 import { formatPrice } from '../../../utils/format'
+import { rememberOrderPhone } from '../../utils/orderAccess'
 import type { DeliveryMode } from '../../../types'
 import toast from 'react-hot-toast'
 import './CheckoutForm.css'
 
 interface CheckoutFormProps {
   onSuccess: (orderNumber: string) => void
+  onDeliveryChange?: (fee: number, isCalculated: boolean) => void
 }
 
-export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
+export function CheckoutForm({
+  onSuccess,
+  onDeliveryChange,
+}: CheckoutFormProps) {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const { items, subtotal, clearCart } = useCart()
   const { data: wilayas = [] } = useWilayas()
   const { data: universities = [] } = useUniversities()
@@ -39,11 +46,19 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('home')
   const [universityId, setUniversityId] = useState('')
   const [orderPlaced, setOrderPlaced] = useState(false)
+  const [idempotencyKey, setIdempotencyKey] = useState(() =>
+    crypto.randomUUID()
+  )
 
   const isUniversity = deliveryMode === 'university'
 
+  const algerWilaya = useMemo(
+    () => wilayas.find((w) => w.code === '16'),
+    [wilayas]
+  )
+
   const { data: communes = [], isLoading: loadingCommunes } = useCommunes(
-    isUniversity ? null : wilayaId || null
+    isUniversity ? algerWilaya?.id ?? null : wilayaId || null
   )
 
   const wilaya = useMemo(
@@ -66,6 +81,10 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const total = subtotal + deliveryFee
 
   useEffect(() => {
+    onDeliveryChange?.(deliveryFee, isUniversity || !!wilaya)
+  }, [deliveryFee, isUniversity, wilaya, onDeliveryChange])
+
+  useEffect(() => {
     setCommuneId('')
   }, [wilayaId])
 
@@ -83,22 +102,22 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   }, [items.length, orderPlaced, navigate])
 
   const validate = (): string | null => {
-    if (items.length === 0) return 'Your cart is empty'
-    if (!firstName.trim()) return 'First name is required'
-    if (!lastName.trim()) return 'Last name is required'
-    if (!phone.trim()) return 'Phone number is required'
+    if (items.length === 0) return t('form.errors.cartEmpty')
+    if (!firstName.trim()) return t('form.errors.firstNameRequired')
+    if (!lastName.trim()) return t('form.errors.lastNameRequired')
+    if (!phone.trim()) return t('form.errors.phoneRequired')
 
     const phoneRegex = /^(0)(5|6|7)[0-9]{8}$/
     if (!phoneRegex.test(phone.trim())) {
-      return 'Invalid phone number (e.g. 0550123456)'
+      return t('form.errors.invalidPhone')
     }
 
     if (isUniversity) {
-      if (!universityId) return 'Please select a university'
+      if (!universityId) return t('form.errors.selectUniversity')
     } else {
-      if (!wilayaId) return 'Please select a wilaya'
-      if (!communeId) return 'Please select a commune'
-      if (!address.trim()) return 'Address is required'
+      if (!wilayaId) return t('form.errors.selectWilaya')
+      if (!communeId) return t('form.errors.selectCommune')
+      if (!address.trim()) return t('form.errors.addressRequired')
     }
 
     return null
@@ -113,34 +132,20 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       return
     }
 
-    // For university orders, default wilaya/commune to Alger
     let finalWilayaId = wilayaId
     let finalCommuneId = communeId
     let finalAddress = address.trim()
 
     if (isUniversity) {
-      const alger = wilayas.find((w) => w.code === '16')
-      finalWilayaId = alger?.id ?? wilayaId
+      finalWilayaId = algerWilaya?.id ?? wilayaId
       const uni = universities.find((u) => u.id === universityId)
-      finalAddress = `University: ${uni?.name ?? 'Unknown'}`
+      finalAddress = `University: ${uni?.name ?? t('common.notAvailable')}`
+      finalCommuneId = communes[0]?.id ?? ''
+    }
 
-      if (!finalCommuneId && alger) {
-        try {
-          const { supabase } = await import('../../../lib/supabase')
-          const { data: firstCommune } = await supabase
-            .from('communes')
-            .select('id')
-            .eq('wilaya_id', alger.id)
-            .eq('is_active', true)
-            .order('code', { ascending: true })
-            .limit(1)
-            .maybeSingle()
-
-          if (firstCommune) finalCommuneId = firstCommune.id
-        } catch {
-          /* ignore */
-        }
-      }
+    if (!finalWilayaId || !finalCommuneId) {
+      toast.error(t('form.errors.selectCommune'))
+      return
     }
 
     try {
@@ -153,19 +158,25 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         note: note.trim() || undefined,
         delivery_mode: deliveryMode,
         university_id: isUniversity ? universityId : undefined,
+        idempotency_key: idempotencyKey,
         items: items.map((item) => ({
           variant_id: item.variant_id,
           quantity: item.quantity,
         })),
       })
 
-      // Mark order placed BEFORE clearing cart so the auto-redirect
-      // useEffect doesn't fire when items becomes empty
+      rememberOrderPhone(
+        result.order.order_number,
+        result.order.customer_phone || phone.trim()
+      )
+      setIdempotencyKey(crypto.randomUUID())
       setOrderPlaced(true)
       clearCart()
       onSuccess(result.order.order_number)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to place order')
+      toast.error(
+        err instanceof Error ? err.message : t('form.errors.orderFailed')
+      )
     }
   }
 
@@ -175,50 +186,65 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       <div className="c-checkout-form__section">
         <h2 className="c-checkout-form__section-title">
           <span className="c-checkout-form__section-number">1</span>
-          Contact information
+          {t('form.contactInfo')}
         </h2>
 
         <div className="c-checkout-form__row">
           <div className="c-checkout-form__field">
-            <label className="c-checkout-form__label">
-              First name <span>*</span>
+            <label
+              className="c-checkout-form__label"
+              htmlFor="checkout-first-name"
+            >
+              {t('form.firstName')} <span aria-hidden="true">*</span>
             </label>
             <input
+              id="checkout-first-name"
+              name="firstName"
               type="text"
               className="c-checkout-form__input"
-              placeholder="Mohamed"
+              placeholder={t('form.firstNamePlaceholder')}
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               autoComplete="given-name"
+              aria-required="true"
             />
           </div>
           <div className="c-checkout-form__field">
-            <label className="c-checkout-form__label">
-              Last name <span>*</span>
+            <label
+              className="c-checkout-form__label"
+              htmlFor="checkout-last-name"
+            >
+              {t('form.lastName')} <span aria-hidden="true">*</span>
             </label>
             <input
+              id="checkout-last-name"
+              name="lastName"
               type="text"
               className="c-checkout-form__input"
-              placeholder="Benali"
+              placeholder={t('form.lastNamePlaceholder')}
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               autoComplete="family-name"
+              aria-required="true"
             />
           </div>
         </div>
 
         <div className="c-checkout-form__field">
-          <label className="c-checkout-form__label">
-            Phone number <span>*</span>
+          <label className="c-checkout-form__label" htmlFor="checkout-phone">
+            {t('form.phone')} <span aria-hidden="true">*</span>
           </label>
           <input
+            id="checkout-phone"
+            name="phone"
             type="tel"
             inputMode="numeric"
             className="c-checkout-form__input"
-            placeholder="0550123456"
+            placeholder={t('form.phonePlaceholder')}
             value={phone}
             onChange={(e) => setPhone(e.target.value.replace(/\s/g, ''))}
             autoComplete="tel"
+            aria-required="true"
           />
         </div>
       </div>
@@ -227,14 +253,24 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       <div className="c-checkout-form__section">
         <h2 className="c-checkout-form__section-title">
           <span className="c-checkout-form__section-number">2</span>
-          Delivery
+          {t('form.delivery')}
         </h2>
 
         <div className="c-checkout-form__field">
-          <label className="c-checkout-form__label">Delivery method</label>
-          <div className="c-checkout-form__delivery c-checkout-form__delivery--three">
+          <label
+            className="c-checkout-form__label"
+            id="checkout-delivery-label"
+          >
+            {t('form.deliveryMethod')}
+          </label>
+          <div
+            className="c-checkout-form__delivery c-checkout-form__delivery--three"
+            role="group"
+            aria-labelledby="checkout-delivery-label"
+          >
             <button
               type="button"
+              aria-pressed={deliveryMode === 'home'}
               className={`c-checkout-form__delivery-option ${
                 deliveryMode === 'home'
                   ? 'c-checkout-form__delivery-option--active'
@@ -244,17 +280,20 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             >
               <Truck size={16} />
               <div>
-                <div className="c-checkout-form__delivery-title">Home</div>
+                <div className="c-checkout-form__delivery-title">
+                  {t('form.home')}
+                </div>
                 <div className="c-checkout-form__delivery-fee">
                   {wilaya
                     ? formatPrice(Number(wilaya.delivery_fee_home ?? 0))
-                    : 'Pick wilaya'}
+                    : t('form.pickWilaya')}
                 </div>
               </div>
             </button>
 
             <button
               type="button"
+              aria-pressed={deliveryMode === 'desk'}
               className={`c-checkout-form__delivery-option ${
                 deliveryMode === 'desk'
                   ? 'c-checkout-form__delivery-option--active'
@@ -269,19 +308,22 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             >
               <Store size={16} />
               <div>
-                <div className="c-checkout-form__delivery-title">Stop desk</div>
+                <div className="c-checkout-form__delivery-title">
+                  {t('form.stopDesk')}
+                </div>
                 <div className="c-checkout-form__delivery-fee">
                   {!wilaya
-                    ? 'Pick wilaya'
+                    ? t('form.pickWilaya')
                     : deskAvailable
                     ? formatPrice(Number(wilaya.delivery_fee_desk ?? 0))
-                    : 'Not available'}
+                    : t('form.notAvailable')}
                 </div>
               </div>
             </button>
 
             <button
               type="button"
+              aria-pressed={deliveryMode === 'university'}
               className={`c-checkout-form__delivery-option ${
                 deliveryMode === 'university'
                   ? 'c-checkout-form__delivery-option--active'
@@ -292,9 +334,11 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
               <GraduationCap size={16} />
               <div>
                 <div className="c-checkout-form__delivery-title">
-                  University
+                  {t('form.university')}
                 </div>
-                <div className="c-checkout-form__delivery-fee">Free</div>
+                <div className="c-checkout-form__delivery-fee">
+                  {t('form.free')}
+                </div>
               </div>
             </button>
           </div>
@@ -302,16 +346,23 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
 
         {isUniversity ? (
           <div className="c-checkout-form__field">
-            <label className="c-checkout-form__label">
-              <GraduationCap size={13} />
-              Choose your university <span>*</span>
+            <label
+              className="c-checkout-form__label"
+              htmlFor="checkout-university"
+            >
+              <GraduationCap size={13} aria-hidden="true" />
+              {t('form.chooseUniversity')}{' '}
+              <span aria-hidden="true">*</span>
             </label>
             <select
+              id="checkout-university"
+              name="university"
               className="c-checkout-form__select"
               value={universityId}
               onChange={(e) => setUniversityId(e.target.value)}
+              aria-required="true"
             >
-              <option value="">Select university...</option>
+              <option value="">{t('form.selectUniversity')}</option>
               {universities.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
@@ -320,22 +371,28 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             </select>
             <p className="c-checkout-form__hint c-checkout-form__hint--success">
               <GraduationCap size={12} />
-              Free shipping — we'll deliver to the university entrance.
+              {t('form.freeUniversityShipping')}
             </p>
           </div>
         ) : (
           <>
             <div className="c-checkout-form__row">
               <div className="c-checkout-form__field">
-                <label className="c-checkout-form__label">
-                  Wilaya <span>*</span>
+                <label
+                  className="c-checkout-form__label"
+                  htmlFor="checkout-wilaya"
+                >
+                  {t('form.wilaya')} <span aria-hidden="true">*</span>
                 </label>
                 <select
+                  id="checkout-wilaya"
+                  name="wilaya"
                   className="c-checkout-form__select"
                   value={wilayaId}
                   onChange={(e) => setWilayaId(e.target.value)}
+                  aria-required="true"
                 >
-                  <option value="">Select wilaya...</option>
+                  <option value="">{t('form.selectWilaya')}</option>
                   {wilayas.map((w) => (
                     <option key={w.id} value={w.id}>
                       {w.code} — {w.name}
@@ -344,21 +401,27 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
                 </select>
               </div>
               <div className="c-checkout-form__field">
-                <label className="c-checkout-form__label">
-                  Commune <span>*</span>
+                <label
+                  className="c-checkout-form__label"
+                  htmlFor="checkout-commune"
+                >
+                  {t('form.commune')} <span aria-hidden="true">*</span>
                 </label>
                 <select
+                  id="checkout-commune"
+                  name="commune"
                   className="c-checkout-form__select"
                   value={communeId}
                   onChange={(e) => setCommuneId(e.target.value)}
                   disabled={!wilayaId || loadingCommunes}
+                  aria-required="true"
                 >
                   <option value="">
                     {!wilayaId
-                      ? 'Pick wilaya first'
+                      ? t('form.pickWilayaFirst')
                       : loadingCommunes
-                      ? 'Loading...'
-                      : 'Select commune...'}
+                      ? t('form.loading')
+                      : t('form.selectCommune')}
                   </option>
                   {communes.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -372,22 +435,28 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             {wilaya && !deskAvailable && deliveryMode === 'desk' && (
               <p className="c-checkout-form__hint">
                 <AlertCircle size={12} />
-                Stop desk not available in {wilaya.name}
+                {t('form.stopDeskUnavailable', { wilaya: wilaya.name })}
               </p>
             )}
 
             <div className="c-checkout-form__field">
-              <label className="c-checkout-form__label">
-                <MapPin size={13} />
-                Address <span>*</span>
+              <label
+                className="c-checkout-form__label"
+                htmlFor="checkout-address"
+              >
+                <MapPin size={13} aria-hidden="true" />
+                {t('form.address')} <span aria-hidden="true">*</span>
               </label>
               <textarea
+                id="checkout-address"
+                name="address"
                 className="c-checkout-form__textarea"
                 rows={2}
-                placeholder="Street, building, landmark..."
+                placeholder={t('form.addressPlaceholder')}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 autoComplete="street-address"
+                aria-required="true"
               />
             </div>
           </>
@@ -398,14 +467,18 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       <div className="c-checkout-form__section">
         <h2 className="c-checkout-form__section-title">
           <span className="c-checkout-form__section-number">3</span>
-          Order notes
+          {t('form.orderNotes')}
         </h2>
         <div className="c-checkout-form__field">
-          <label className="c-checkout-form__label">Note (optional)</label>
+          <label className="c-checkout-form__label" htmlFor="checkout-note">
+            {t('form.noteOptional')}
+          </label>
           <textarea
+            id="checkout-note"
+            name="note"
             className="c-checkout-form__textarea"
             rows={3}
-            placeholder="Any additional details..."
+            placeholder={t('form.notePlaceholder')}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
@@ -419,8 +492,8 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         disabled={createOrder.isPending || items.length === 0}
       >
         {createOrder.isPending
-          ? 'Placing order...'
-          : `Confirm order — ${formatPrice(total)}`}
+          ? t('form.placingOrder')
+          : t('form.confirmOrderWithTotal', { total: formatPrice(total) })}
         {!createOrder.isPending && <ArrowRight size={18} />}
       </button>
     </form>
